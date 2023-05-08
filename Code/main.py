@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from scipy import stats
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.linear_model import LinearRegression
@@ -160,6 +161,7 @@ def bmi_train(data):
 def bmi_main():
     
     #importing Data, seperating the data which needs truncation from the known data
+    #LEAVE THE PATH HARD CODED, NOT THE SAME AS "df_path"
     data = pd.read_csv('../data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv')
 
     #One hot encoding the data 
@@ -212,4 +214,15 @@ def bmi_main():
     print(truncation.iloc[1:10])
     """
     
-bmi_main()
+def Kolmogorov_Smirnov(df):
+    # Kolgorov_Smirnov test for normality with transformations
+    for i in ['age', 'avg_glucose_level', 'bmi']:
+        print(f"{i} - Kolgorov Smirnov test for normality:")
+        res = stats.kstest(df[i], stats.norm.cdf)
+        print(f"probability that {i} is normaly distributed with no transformation = {1 - res.statistic}")
+        res = stats.kstest((df[i])**0.5, stats.norm.cdf)
+        print(f"probability that {i} is normaly distributed with sqrt transformation = {1 - res.statistic}")
+        res = stats.kstest(np.log10(df[i]), stats.norm.cdf)
+        print(f"probability that {i} is normaly distributed with log transformation = {1 - res.statistic}")
+        print()
+
