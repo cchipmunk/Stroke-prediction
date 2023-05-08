@@ -1,16 +1,25 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import math
 import scipy.stats as sts
 import seaborn as sns
 from itertools import combinations
+from statistics import mean
+import warnings
+
+warnings.filterwarnings("ignore")
+
+
 
 # Load the data 
-data = pd.read_csv("../data/healthcare-dataset-stroke-data.csv")
+df_path = "../data/Truncated_data/Stroke_data.csv"
+
+data = pd.read_csv(df_path)
 
 # Look at data
 # Row and column number 
@@ -86,6 +95,121 @@ for i, ax in enumerate(axs.flatten()):
 fig.tight_layout()
 plt.show()
 
+""" BMI estimation code """
 
-# Perform one-hot encoding for all categorical data
+def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
+    ### Only use for BMI estimation scores ###
 
+    y_pred_test = model.predict(X_test)
+    y_pred_train = model.predict(X_train)
+
+    r2_test = r2_score(y_test, y_pred_test)
+    rmse_test = (sum((y_test - y_pred_test)**2)/len(y_test))**0.5
+
+    r2_train = r2_score(y_train, y_pred_train)
+    rmse_train = (mean_squared_error(y_train, y_pred_train, squared=True))**0.5
+
+    r2_mean = r2_score(y_test, y_mean)
+    rmse_mean = (sum((y_test - y_mean)**2)/len(y_test))**0.5
+
+    print('Training set score: R2 score: {:.3f}, RMSE: {:.3f}'.format(r2_train, rmse_train))
+    print('Test set score: R2 score: {:.3f}, RMSE: {:.3f}'.format(r2_test, rmse_test))
+    print('Score using means (no model): R2 score: {:.3f}, RMSE: {:.3f}'.format(r2_mean, rmse_mean))
+
+def bmi_train(data):
+    print()
+    df = data.loc[data['bmi'].notna()] #Dropping values without labels
+    df = df.drop(['stroke'], axis = 1) # We do not want strokes in our model, as we will be estimating it later (Data leakage)
+
+    encoded_df = df #One hot encoding the columns
+    for i in ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']:
+        encoded_df = pd.get_dummies(encoded_df, columns = [i], prefix = [i], drop_first = True )
+
+    #dropping irrelevant Columns for our model (feature selection)
+    encoded_df = encoded_df.drop(['Residence_type_Urban', 'gender_Male', 'id', 'work_type_Private', 'work_type_Self-employed'], axis=1)
+
+    #Creating Labels and Features
+    X = encoded_df.drop('bmi', axis=1)
+    y = encoded_df['bmi']
+
+    #Seperating into train / test data-set
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56)
+    
+    #Scaling the data
+    global scaler
+    global num_cols
+
+    scaler = RobustScaler() #Using robust because data not normally distributed
+    num_cols = ['age', 'avg_glucose_level']
+    X_train_scaled, X_test_scaled = X_train, X_test
+    X_train_scaled[num_cols] = scaler.fit_transform(X_train[num_cols]) 
+    X_test_scaled[num_cols] = scaler.transform(X_test[num_cols])
+
+    #Training the model
+    global LR
+
+    LR = LinearRegression()
+    LR.fit(X_train_scaled, y_train)
+    
+    #Creating a Model which calculates the mean for every estimated value as comparaison
+    y_mean = [mean(y)] * len(y_test)
+
+    #Evaluating performance
+    bmi_scores(LR, X_train, y_train, X_test, y_test, y_mean)
+
+def bmi_main():
+    
+    #importing Data, seperating the data which needs truncation from the known data
+    data = pd.read_csv('../data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv')
+
+    #One hot encoding the data 
+    encoded_df = data
+    for i in ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']:
+        encoded_df = pd.get_dummies(encoded_df, columns = [i], prefix = [i], drop_first=True)
+
+    #dropping label
+    X = encoded_df.drop(['bmi'], axis= 1) 
+
+    #Dropping various other Features (Feature selection), as well as Stroke Feature (Which we want to estimate later)
+    X = X.drop(['Residence_type_Urban', 'gender_Male', 'work_type_Private', 'work_type_Self-employed', 'stroke', 'id'], axis = 1) 
+
+    #Selecting data to truncate
+    X = X.loc[data['bmi'].isna()]
+
+    #Training model
+    bmi_train(data)
+
+    #Scaling data to truncate (Using same Scaler as in training model)
+    X_scaled = X
+    X_scaled[num_cols] = scaler.transform(X[num_cols])
+
+    #Applying model on data to estimate
+    y = LR.predict(X_scaled)
+
+    # Saving data in the panda table and saving it as csv:
+    truncation = data.loc[data['bmi'].isna()]
+    truncation['bmi'] = y
+    data.loc[data['bmi'].isna()] = truncation
+
+    
+    data.to_csv('../data/Truncated_data/Stroke_data.csv')
+    print()
+    print('Truncated data saved to: ../data/Truncated_data/Stroke_data.csv')
+    print()
+
+
+    #Manual test to check if the saving into truncation effectively worked
+    """
+    columns = data.columns
+    for i in columns:
+        print(i, ": ", data[i].isna().sum() ,"missing data" )
+    
+    print()
+    print(data.loc[data['bmi'].isna()]) #Checking if there are no empty values
+
+    test = X_scaled.iloc[1:10]
+    print(test[['hypertension', 'heart_disease']])
+    print(truncation.iloc[1:10])
+    """
+    
+bmi_main()
