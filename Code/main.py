@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore")
 
 
 # Load the data 
-df_path = "../data/Truncated_data/Stroke_data.csv"
+df_path = "./data/Truncated_data/Stroke_data.csv"
 
 data = pd.read_csv(df_path)
 
@@ -96,6 +96,40 @@ for i, ax in enumerate(axs.flatten()):
 fig.tight_layout()
 plt.show()
 
+""" Correlation estimation code """
+
+def estimate_correlation(data):
+    num_cols = ['age', 'avg_glucose_level', 'bmi']
+
+    for i in num_cols:
+        pear_v = sts.pearsonr(data['stroke'], data[i] )
+        print(f"""Pearson coefficient for {i} :
+            value = {pear_v[0]}
+            p = {pear_v[1]}""")
+        if pear_v[1] <= 0.05/10: # With Bonferoni correcture
+            print("            *** Heavily Correlated")
+        elif pear_v[1] >= 0.05/10 and p <= 0.05:
+            print("          * correlated")
+        else:
+            print("            No significant correlation")
+            print()
+        
+    for i in ["gender", "hypertension", "heart_disease", "ever_married", "work_type", "Residence_type", "smoking_status"]:
+        cont_table = pd.crosstab(data[i], data['stroke'])
+        p = sts.chi2_contingency(cont_table)[1]
+        s = sts.chi2_contingency(cont_table)[0]
+
+        print(f"""Chi_sq for {i} :
+            Value = {s}
+            p = {p}""")
+        if p <= 0.05/10: # With Bonferoni correcture
+            print("            *** Heavily Correlated")
+        elif p >= 0.05/10 and p <= 0.05:
+            print("          * correlated")
+        else:
+            print("            No significant correlation")
+        print()
+
 """ BMI estimation code """
 
 def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
@@ -117,7 +151,7 @@ def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
     print('Test set score: R2 score: {:.3f}, RMSE: {:.3f}'.format(r2_test, rmse_test))
     print('Score using means (no model): R2 score: {:.3f}, RMSE: {:.3f}'.format(r2_mean, rmse_mean))
 
-def bmi_train(data):
+def bmi_train(data): #Parametric Model should be changed to non parametric because data is not normally distributed :"(
     print()
     df = data.loc[data['bmi'].notna()] #Dropping values without labels
     df = df.drop(['stroke'], axis = 1) # We do not want strokes in our model, as we will be estimating it later (Data leakage)
@@ -226,3 +260,4 @@ def Kolmogorov_Smirnov(df):
         print(f"probability that {i} is normaly distributed with log transformation = {1 - res.statistic}")
         print()
 
+estimate_correlation(data)
