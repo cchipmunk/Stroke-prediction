@@ -18,7 +18,7 @@ warnings.filterwarnings("ignore")
 
 
 # Load the data 
-df_path = "./data/Truncated_data/Stroke_data.csv"
+df_path = "../Data/Truncated_data/Stroke_data.csv"
 
 data = pd.read_csv(df_path)
 
@@ -65,10 +65,19 @@ data["smoking_status"] = pd.Categorical(data["smoking_status"])
 
 print(data.dtypes)
 
+# Are there any duplicates? --> NO
+print(dict(data.duplicated(subset = ["id"], keep = False)) == True)
+
 # Summarising data in more detail
 # Distribution of continuous variables 
+# Does not work as we have too many features --> use another test
+"""
 for var in data.dtypes[data.dtypes == "float64"].index:
     print(f"Shapiro-Wilk for {var}, p-value: {sts.shapiro(data[var]).pvalue: .10f}")
+"""
+# Use this instead
+for var in data.dtypes[data.dtypes == "float64"].index:
+    print(f"Normality test for {var}, p-value: {sts.normaltest(data[var]).pvalue: .10f}")
 
 vars = data.dtypes[data.dtypes == "float64"].index.tolist()
 fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True, figsize=(12, 8))
@@ -77,6 +86,7 @@ titles = {
     "avg_glucose_level": "Average glucose level",
     "bmi": "Body Mass Index",
 }
+
 xlabels = {
     "age": "Age (years)",
     "avg_glucose_level": "Average glucose level (mg/dl)",
@@ -94,6 +104,25 @@ for i, ax in enumerate(axs.flatten()):
     if i not in [0, 3]:
         ax.set_ylabel(None)
 fig.tight_layout()
+plt.show()
+
+# One-hot endodint --> all use the same --> do not define in any other function
+
+
+""" Demographic Data insights """
+# Auxilliary variable outcome --> stroke or not?
+
+
+# Age distribution
+fig, ax = plt.subplots(1, 2, figsize = (12,6))
+
+# Plot the age distribution separated by outcome
+age = sns.histplot(data, x = "age", binwidth = 5, hue = "stroke", ax = ax[0])
+label_axes = age.set(xlabel = "age [year]", ylabel = "number of patients", title = "Age distribution by outcome")
+
+# Plot age dispersion separated by gender
+age_range = sns.boxplot(data = data, y = "age", x = "gender", hue = "stroke", ax = ax[1], width = 0.4)
+age_range = age_range.set(ylabel = "age [year]", xlabel='Gender', title= 'Age Range split by Gender and Outcome')
 plt.show()
 
 """ Correlation estimation code """
