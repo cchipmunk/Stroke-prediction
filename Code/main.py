@@ -29,7 +29,7 @@ print("rows:", data.shape[0], "columns:", data.shape[1])
 # Data types
 print(data.dtypes)
 
-# Missing values --> fill in with other data --> HOW - method needed --> multiple linear regression mit feature selection
+# Missing values --> fill in with other data --> see bmi
 print(data.isna().sum(axis = 0)) 
 
 # How many patients have all attributes present?
@@ -110,8 +110,6 @@ for i, ax in enumerate(axs.flatten()):
 fig.tight_layout()
 plt.show()
 
-# One-hot endoding --> all use the same --> do not define in any other function
-
 
 """ Demographic Data insights """
 # Auxilliary variable outcome --> stroke or not?
@@ -133,6 +131,11 @@ plt.show()
 
 # Should exculde one person with "other" gender --> not adding any information!
 
+# Identify outliers
+
+# One-hot endoding --> all use the same --> do not define in any other function
+
+# Test and training data set split
 
 """ Correlation estimation code """
 
