@@ -364,12 +364,12 @@ def KNN(data): # Or: def KNN(X_train, X_test, y_train, y_test), has to be scaled
     
     # Evaluation of model
     cm = confusion_matrix(y_test, y_pred)
-    print(Confusion Matrix of KNN:\n cm)
+    print("Confusion Matrix of KNN:"\n cm)
     
     accuracy_score = accuracy_score(y_test, y_pred)
-    print(Accuracy Score of KNN:\n accuracy_score)
+    print("Accuracy Score of KNN:"\n accuracy_score)
     
     f1_score = f1_score(y_test, y_pred)
-    print(F1 Score of KNN:\n f1_score)
+    print("F1 Score of KNN:"\n f1_score)
     
     
