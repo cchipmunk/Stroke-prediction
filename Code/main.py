@@ -78,7 +78,6 @@ data["heart_disease"] = data["heart_disease"].cat.rename_categories(
     {0: "Yes", 1: "No"}
 )
 
-
 # How many "Other" in gender are there? --> only 1 --> Reason: see report
 print("Value counts", data["gender"].value_counts())
 data.drop(data[data["gender"] == "Other"].index, axis = 0, inplace = True)
@@ -90,7 +89,8 @@ print("Value counts", data["gender"].value_counts())
 # Are there any duplicates? --> NO
 print(dict(data.duplicated(subset = ["id"], keep = False)) == True)
 
-# Summarising data in more detail
+
+### Summarising data in more detail ###
 # Distribution of continuous variables 
 # Does not work as we have too many features --> use another test
 """
@@ -101,6 +101,7 @@ for var in data.dtypes[data.dtypes == "float64"].index:
 for var in data.dtypes[data.dtypes == "float64"].index:
     print(f"Normality test for {var}, p-value: {sts.normaltest(data[var]).pvalue: .10f}")
 
+# Distribution of continuous variables
 vars = data.dtypes[data.dtypes == "float64"].index.tolist()
 fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True, figsize=(12, 8))
 titles = {
@@ -128,8 +129,7 @@ for i, ax in enumerate(axs.flatten()):
 fig.tight_layout()
 plt.show()
 
-
-# Demographc data insights
+### Demographc data insights ###
 dem_data = data.copy()
 dem_data["stroke"] = pd.Categorical(dem_data["stroke"])
 dem_data["stroke"] = dem_data["stroke"].cat.rename_categories(
@@ -148,15 +148,18 @@ age_range = sns.boxplot(dem_data, y = "age", x = "gender", hue = "stroke", ax = 
 age_range = age_range.set(ylabel = "Age [year]", xlabel='Gender', title= 'Age Range split by Gender and Stroke Outcome')
 plt.show()
 
-# Identify outliers
 
-# One-hot endoding --> all use the same --> do not define in any other function
+### One-hot endoding --> all use the same --> do not define in any other function ###
 
-# Test and training data set split
+
+### Test and training data set split ###
 
 
 
 """ Correlation estimation code """
+# show correlation --> needed?
+sns.pairplot(data=data, x_vars=vars, y_vars=vars)
+plt.show()
 
 def estimate_correlation(data):
     num_cols = ['age', 'avg_glucose_level', 'bmi']
