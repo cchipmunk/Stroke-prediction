@@ -158,7 +158,8 @@ plt.show()
 
 """ Correlation estimation code """
 # show correlation --> needed?
-sns.pairplot(data=data, x_vars=vars, y_vars=vars)
+corr_plot= sns.pairplot(data=data, x_vars=vars, y_vars=vars)
+corr_plot.fig.suptitle("Correlation between continuous variables", y = 1)
 plt.show()
 
 def estimate_correlation(data):
