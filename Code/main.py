@@ -1,17 +1,28 @@
 import pandas as pd
 import numpy as np
 from scipy import stats
+import scipy.stats as sts
+from scipy.spatial.distance import pdist, squareform, cdist
+from scipy.spatial.distance import euclidean, cityblock, minkowski
+from sklearn import cluster, datasets, mixture
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 import math
-import scipy.stats as sts
 import seaborn as sns
 from itertools import combinations
+from itertools import cycle, islice
 from statistics import mean
 import warnings
+import time
+
+
 
 warnings.filterwarnings("ignore")
 
@@ -326,3 +337,39 @@ def Kolmogorov_Smirnov(df):
         print()
 
 estimate_correlation(data)
+
+
+"""K-Nearest Neighbour (KNN) Model"""
+def KNN(data): # Or: def KNN(X_train, X_test, y_train, y_test), has to be scaled
+   
+    # Definition of X and y ??? -> X_train, X_test, y_train, y_test
+    X = data[['gender','age','hypertension','heart_disease','ever_married','work_type','Residence_type','avg_glucose_level','bmi','smoking_status']]
+    y = data['stroke']
+    
+    # Standardization - necessary ???
+    X = StandardScaler().fit_transform(X)
+    
+    # K tuning
+    # Selection of the optimal k value. K is a hyperparameter. There is no one proper method of estimation. K should be an odd number.
+    # Square Root Method is used: Square root of the number of samples in the training dataset.
+    k_neighbors = sqrt(len(y_train)
+    
+    # Define the model: Initiate KNN
+    classifier = KNeighborsClassifier(n_neighbors = k_neighbors, metric = 'euclidean')
+    # Euclidean Distance used: It is the most commonly used distance formula in machine learning.
+    classifier.fit(X_train, y_train)
+    
+    # Predict the test results
+    y_pred = classifier.predict(X_test)
+    
+    # Evaluation of model
+    cm = confusion_matrix(y_test, y_pred)
+    print(Confusion Matrix of KNN:\n cm)
+    
+    accuracy_score = accuracy_score(y_test, y_pred)
+    print(Accuracy Score of KNN:\n accuracy_score)
+    
+    f1_score = f1_score(y_test, y_pred)
+    print(F1 Score of KNN:\n f1_score)
+    
+    
