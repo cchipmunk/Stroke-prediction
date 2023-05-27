@@ -16,7 +16,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-
+"""Data Preprocessing"""
 # Load the data 
 df_path = "../Data/Truncated_data/Stroke_data.csv"
 
@@ -38,15 +38,14 @@ print((data.isna().sum(axis=1) == 0).sum())
 # How is the outcome (stroke) distributed?
 data["stroke"].value_counts()
 
-# features hypertension and heart_disease: 1 = yes, 0 = no --> categorical? Also outcome?
-data["stroke"] = pd.Categorical(data["stroke"])
-
 # Number of groups in the object data frames
 print('There are', data.groupby('gender').ngroups,'unique genders in the data.') # Three --> display those?
 print('There are', data.groupby('ever_married').ngroups,'unique groups if they ever got married in the data.') # binary
 print('There are', data.groupby('work_type').ngroups,'unique work types in the data.') # Five
-print('There are', data.groupby('Residence_type').ngroups,'unique residence types in the data.') # binary
+print('There are', data.groupby('Residence_type').ngroups,'unique residence types in the data.') # Binary
 print('There are', data.groupby('smoking_status').ngroups,'unique smoking in the data.') #Four
+print('There are', data.groupby('hypertension').ngroups,'unique hypertensions in the data.') # Two
+print('There are', data.groupby('heart_disease').ngroups,'unique heart diseases in the data.') # Twp
 
 # Show different groups in features
 print("Gender", data["gender"].unique())
@@ -54,8 +53,11 @@ print("Ever married?", data["ever_married"].unique())
 print("Work type", data["work_type"].unique())
 print("Residence type", data["Residence_type"].unique())
 print("Smoking status", data["smoking_status"].unique())
+print("Hypertension?", data["hypertension"].unique())
+print("Heart disease?", data["heart_disease"].unique())
+print("Stroke?", data["stroke"].unique())
 
-# Object type --> no ordinal data (Smoking status could be ...)
+# Object type --> no ordinal data
 
 # Object --> categorical
 data["gender"] = pd.Categorical(data["gender"])
@@ -63,10 +65,26 @@ data["ever_married"] = pd.Categorical(data["ever_married"])
 data["work_type"] = pd.Categorical(data["work_type"])
 data["Residence_type"] = pd.Categorical(data["Residence_type"])
 data["smoking_status"] = pd.Categorical(data["smoking_status"])
+data["hypertension"] = pd.Categorical(data["hypertension"])
+data["heart_disease"] = pd.Categorical(data["heart_disease"])
 
 print(data.dtypes)
 
-# How many "other" in gender are there? --> only 1
+# Rename categories of hypertensions, heart_disease and stroke
+data["hypertension"] = data["hypertension"].cat.rename_categories(
+    {0: "Yes", 1: "No"}
+)
+data["heart_disease"] = data["heart_disease"].cat.rename_categories(
+    {0: "Yes", 1: "No"}
+)
+
+
+# How many "Other" in gender are there? --> only 1 --> Reason: see report
+print("Value counts", data["gender"].value_counts())
+data.drop(data[data["gender"] == "Other"].index, axis = 0, inplace = True)
+data["gender"] = data["gender"].astype('object')
+data["gender"] = pd.Categorical(data["gender"])
+data.reset_index(drop = True, inplace = True)
 print("Value counts", data["gender"].value_counts())
 
 # Are there any duplicates? --> NO
@@ -111,11 +129,12 @@ fig.tight_layout()
 plt.show()
 
 
-""" Demographic Data insights """
-# Auxilliary variable outcome --> stroke or not?
-dem_data = data
-# dem_data["stroke"].map(dict(1 = "yes", 0 = "no"))
-print(dem_data)
+# Demographc data insights
+dem_data = data.copy()
+dem_data["stroke"] = pd.Categorical(dem_data["stroke"])
+dem_data["stroke"] = dem_data["stroke"].cat.rename_categories(
+    {0: "Yes", 1: "No"}
+)
 
 # Age distribution
 fig, ax = plt.subplots(1, 2, figsize = (12,6))
@@ -129,13 +148,13 @@ age_range = sns.boxplot(dem_data, y = "age", x = "gender", hue = "stroke", ax = 
 age_range = age_range.set(ylabel = "Age [year]", xlabel='Gender', title= 'Age Range split by Gender and Stroke Outcome')
 plt.show()
 
-# Should exculde one person with "other" gender --> not adding any information!
-
 # Identify outliers
 
 # One-hot endoding --> all use the same --> do not define in any other function
 
 # Test and training data set split
+
+
 
 """ Correlation estimation code """
 
@@ -143,7 +162,8 @@ def estimate_correlation(data):
     num_cols = ['age', 'avg_glucose_level', 'bmi']
 
     for i in num_cols:
-        pear_v = sts.pearsonr(data['stroke'], data[i] )
+        print(i)
+        pear_v = sts.pearsonr(data['stroke'], data[i])
         print(f"""Pearson coefficient for {i} :
             value = {pear_v[0]}
             p = {pear_v[1]}""")
