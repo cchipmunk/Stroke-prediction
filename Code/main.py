@@ -38,7 +38,8 @@ print((data.isna().sum(axis=1) == 0).sum())
 # How is the outcome (stroke) distributed?
 data["stroke"].value_counts()
 
-# features hypertension and heart_disease: 1 = yes, 0 = no --> categorical?
+# features hypertension and heart_disease: 1 = yes, 0 = no --> categorical? Also outcome?
+data["stroke"] = pd.Categorical(data["stroke"])
 
 # Number of groups in the object data frames
 print('There are', data.groupby('gender').ngroups,'unique genders in the data.') # Three --> display those?
@@ -64,6 +65,9 @@ data["Residence_type"] = pd.Categorical(data["Residence_type"])
 data["smoking_status"] = pd.Categorical(data["smoking_status"])
 
 print(data.dtypes)
+
+# How many "other" in gender are there? --> only 1
+print("Value counts", data["gender"].value_counts())
 
 # Are there any duplicates? --> NO
 print(dict(data.duplicated(subset = ["id"], keep = False)) == True)
@@ -106,24 +110,29 @@ for i, ax in enumerate(axs.flatten()):
 fig.tight_layout()
 plt.show()
 
-# One-hot endodint --> all use the same --> do not define in any other function
+# One-hot endoding --> all use the same --> do not define in any other function
 
 
 """ Demographic Data insights """
 # Auxilliary variable outcome --> stroke or not?
-
+dem_data = data
+# dem_data["stroke"].map(dict(1 = "yes", 0 = "no"))
+print(dem_data)
 
 # Age distribution
 fig, ax = plt.subplots(1, 2, figsize = (12,6))
 
 # Plot the age distribution separated by outcome
-age = sns.histplot(data, x = "age", binwidth = 5, hue = "stroke", ax = ax[0])
-label_axes = age.set(xlabel = "age [year]", ylabel = "number of patients", title = "Age distribution by outcome")
+age = sns.histplot(dem_data, x = "age", binwidth = 5, hue = "stroke", ax = ax[0])
+label_axes = age.set(xlabel = "Age [year]", ylabel = "Number of Patients", title = "Age Distribution by Stroke Outcome")
 
 # Plot age dispersion separated by gender
-age_range = sns.boxplot(data = data, y = "age", x = "gender", hue = "stroke", ax = ax[1], width = 0.4)
-age_range = age_range.set(ylabel = "age [year]", xlabel='Gender', title= 'Age Range split by Gender and Outcome')
+age_range = sns.boxplot(dem_data, y = "age", x = "gender", hue = "stroke", ax = ax[1], width = 0.4)
+age_range = age_range.set(ylabel = "Age [year]", xlabel='Gender', title= 'Age Range split by Gender and Stroke Outcome')
 plt.show()
+
+# Should exculde one person with "other" gender --> not adding any information!
+
 
 """ Correlation estimation code """
 
