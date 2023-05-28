@@ -8,9 +8,10 @@ from sklearn import cluster, datasets, mixture
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, RobustScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_curve, confusion_matrix, auc
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.metrics import confusion_matrix
 from sklearn.metrics import f1_score
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
@@ -373,3 +374,49 @@ def KNN(data): # Or: def KNN(X_train, X_test, y_train, y_test), has to be scaled
     print("F1 Score of KNN:"\n f1_score)
     
     
+"""Random Forest"""
+def evaluation_metrics(tcl, y, X, ax, legend_entry = "my legendEntry"):
+    """
+    Comput evaluation metrics for provided classifier given true labels and input features
+    Provides a plot of ROC curve 
+
+    tcl: true class label, numpy array
+
+    y:  true class labels, numpy array
+
+    X: feature matrix, numpy array
+
+    ax: matplotlip axis to plot on
+
+    legend_entry: the legend entry that should be displayed on plot, string
+
+    return: confusion matrix comprising true positives (tp), true negatives (tn), false positives (fp), and false negatives (fn)
+            four integers
+    """
+
+    # Get label prediction
+    y_test_pred = clf.predict(X)
+
+    # Calculate confusion matrix
+    tn, fp, fn, tp = confusion_matrix(y, y_test_pred).ravel()
+
+    # Calculate the evaoluation metrics
+    precision   = tp / (tp + fp)
+    specificity = tn / (fp + tn)
+    accuracy    = (tp + tn) / (tp + tn + fp + fn)
+    recall      = tp / (tp + fn)
+    f1          = tp / (tp + 0.5 * (fn + fp))
+
+    # Get the roc curve using sklearn function
+    y_test_predict_proba = clf.predict_proba(X)
+    fp_rates, tp_rates, _ = roc_curve(y, y_test_predict_proba[:,1])
+
+    # Calculate the area under the roc curve using a sklearn function
+    roc_auc = auc(fp_rates, tp_rates)
+
+    # Plot on the provided axis
+    ax.plot(fp_rates, tp_rates ,label = legend_entry)
+
+    return [accuracy,precision,recall,specificity,f1, roc_auc]
+
+def random_forest()
