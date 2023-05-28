@@ -372,37 +372,34 @@ def Kolmogorov_Smirnov(df):
 
 
 """K-Nearest Neighbour (KNN) Model"""
-def KNN(data): # Or: def KNN(X_train, X_test, y_train, y_test), has to be scaled
+def KNN(X_train_scaled,X_test_scaled,y_train,y_test): 
    
-    # Definition of X and y ??? -> X_train, X_test, y_train, y_test
-    X = data[['gender','age','hypertension','heart_disease','ever_married','work_type','Residence_type','avg_glucose_level','bmi','smoking_status']]
-    y = data['stroke']
-    
-    # Standardization - necessary ???
-    X = StandardScaler().fit_transform(X)
-    
     # K tuning
     # Selection of the optimal k value. K is a hyperparameter. There is no one proper method of estimation. K should be an odd number.
     # Square Root Method is used: Square root of the number of samples in the training dataset.
-    k_neighbors = math.sqrt(len(y_train))
+    k_neighbors = round(math.sqrt(len(y_train)))
     
     # Define the model: Initiate KNN
     classifier = KNeighborsClassifier(n_neighbors = k_neighbors, metric = 'euclidean')
     # Euclidean Distance used: It is the most commonly used distance formula in machine learning.
-    classifier.fit(X_train, y_train)
+    classifier.fit(X_train_scaled, y_train)
     
     # Predict the test results
-    y_pred = classifier.predict(X_test)
+    y_pred = classifier.predict(X_test_scaled)
     
     # Evaluation of model
     cm = confusion_matrix(y_test, y_pred)
     """
     print("Confusion Matrix of KNN:"\n cm)
+    """
     
     accuracy_score = accuracy_score(y_test, y_pred)
+    """
     print("Accuracy Score of KNN:"\n accuracy_score)
+    """
     
     f1_score = f1_score(y_test, y_pred)
+    """
     print("F1 Score of KNN:"\n f1_score)
     """
     
