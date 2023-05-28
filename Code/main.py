@@ -25,154 +25,185 @@ import time
 
 
 
+
 warnings.filterwarnings("ignore")
 
 
-"""Data Preprocessing"""
-# Load the data 
-df_path = "../Data/Truncated_data/Stroke_data.csv"
-
+### Load the data ### 
+df_path = "./Data/Truncated_data/Stroke_data.csv"
 data = pd.read_csv(df_path)
 
-# Look at data
-# Row and column number 
-print("rows:", data.shape[0], "columns:", data.shape[1])
+### Data Exploration ###
+def data_exploration():
+    # Look at data
+    # Row and column number 
+    print("rows:", data.shape[0], "columns:", data.shape[1])
 
-# Data types
-print(data.dtypes)
+    # Data types
+    print(data.dtypes)
 
-# Missing values --> fill in with other data --> see bmi
-print(data.isna().sum(axis = 0)) 
+    # Missing values --> fill in with other data --> see bmi
+    print(data.isna().sum(axis = 0)) 
 
-# How many patients have all attributes present?
-print((data.isna().sum(axis=1) == 0).sum())
+    # How many patients have all attributes present?
+    print((data.isna().sum(axis=1) == 0).sum())
 
-# How is the outcome (stroke) distributed?
-data["stroke"].value_counts()
+    # How is the outcome (stroke) distributed?
+    data["stroke"].value_counts()
 
-# Number of groups in the object data frames
-print('There are', data.groupby('gender').ngroups,'unique genders in the data.') # Three --> display those?
-print('There are', data.groupby('ever_married').ngroups,'unique groups if they ever got married in the data.') # binary
-print('There are', data.groupby('work_type').ngroups,'unique work types in the data.') # Five
-print('There are', data.groupby('Residence_type').ngroups,'unique residence types in the data.') # Binary
-print('There are', data.groupby('smoking_status').ngroups,'unique smoking in the data.') #Four
-print('There are', data.groupby('hypertension').ngroups,'unique hypertensions in the data.') # Two
-print('There are', data.groupby('heart_disease').ngroups,'unique heart diseases in the data.') # Twp
+    # Number of groups in the object data frames
+    print('There are', data.groupby('gender').ngroups,'unique genders in the data.') # Three --> display those?
+    print('There are', data.groupby('ever_married').ngroups,'unique groups if they ever got married in the data.') # binary
+    print('There are', data.groupby('work_type').ngroups,'unique work types in the data.') # Five
+    print('There are', data.groupby('Residence_type').ngroups,'unique residence types in the data.') # Binary
+    print('There are', data.groupby('smoking_status').ngroups,'unique smoking in the data.') #Four
+    print('There are', data.groupby('hypertension').ngroups,'unique hypertensions in the data.') # Two
+    print('There are', data.groupby('heart_disease').ngroups,'unique heart diseases in the data.') # Twp
 
-# Show different groups in features
-print("Gender", data["gender"].unique())
-print("Ever married?", data["ever_married"].unique())
-print("Work type", data["work_type"].unique())
-print("Residence type", data["Residence_type"].unique())
-print("Smoking status", data["smoking_status"].unique())
-print("Hypertension?", data["hypertension"].unique())
-print("Heart disease?", data["heart_disease"].unique())
-print("Stroke?", data["stroke"].unique())
+    # Show different groups in features
+    print("Gender", data["gender"].unique())
+    print("Ever married?", data["ever_married"].unique())
+    print("Work type", data["work_type"].unique())
+    print("Residence type", data["Residence_type"].unique())
+    print("Smoking status", data["smoking_status"].unique())
+    print("Hypertension?", data["hypertension"].unique())
+    print("Heart disease?", data["heart_disease"].unique())
+    print("Stroke?", data["stroke"].unique())
 
-# Object type --> no ordinal data
+    # Object type --> no ordinal data
 
-# Object --> categorical
-data["gender"] = pd.Categorical(data["gender"])
-data["ever_married"] = pd.Categorical(data["ever_married"])
-data["work_type"] = pd.Categorical(data["work_type"])
-data["Residence_type"] = pd.Categorical(data["Residence_type"])
-data["smoking_status"] = pd.Categorical(data["smoking_status"])
-data["hypertension"] = pd.Categorical(data["hypertension"])
-data["heart_disease"] = pd.Categorical(data["heart_disease"])
+    # Object --> categorical
+    data["gender"] = pd.Categorical(data["gender"])
+    data["ever_married"] = pd.Categorical(data["ever_married"])
+    data["work_type"] = pd.Categorical(data["work_type"])
+    data["Residence_type"] = pd.Categorical(data["Residence_type"])
+    data["smoking_status"] = pd.Categorical(data["smoking_status"])
+    data["hypertension"] = pd.Categorical(data["hypertension"])
+    data["heart_disease"] = pd.Categorical(data["heart_disease"])
 
-print(data.dtypes)
+    print(data.dtypes)
 
-# Rename categories of hypertensions, heart_disease and stroke
-data["hypertension"] = data["hypertension"].cat.rename_categories(
-    {0: "Yes", 1: "No"}
-)
-data["heart_disease"] = data["heart_disease"].cat.rename_categories(
-    {0: "Yes", 1: "No"}
-)
-
-# How many "Other" in gender are there? --> only 1 --> Reason: see report
-print("Value counts", data["gender"].value_counts())
-data.drop(data[data["gender"] == "Other"].index, axis = 0, inplace = True)
-data["gender"] = data["gender"].astype('object')
-data["gender"] = pd.Categorical(data["gender"])
-data.reset_index(drop = True, inplace = True)
-print("Value counts", data["gender"].value_counts())
-
-# Are there any duplicates? --> NO
-print(dict(data.duplicated(subset = ["id"], keep = False)) == True)
-
-
-### Summarising data in more detail ###
-# Distribution of continuous variables 
-# Does not work as we have too many features --> use another test
-"""
-for var in data.dtypes[data.dtypes == "float64"].index:
-    print(f"Shapiro-Wilk for {var}, p-value: {sts.shapiro(data[var]).pvalue: .10f}")
-"""
-# Use this instead
-for var in data.dtypes[data.dtypes == "float64"].index:
-    print(f"Normality test for {var}, p-value: {sts.normaltest(data[var]).pvalue: .10f}")
-
-# Distribution of continuous variables
-vars = data.dtypes[data.dtypes == "float64"].index.tolist()
-fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True, figsize=(12, 8))
-titles = {
-    "age": "Age",
-    "avg_glucose_level": "Average glucose level",
-    "bmi": "Body Mass Index",
-}
-
-xlabels = {
-    "age": "Age (years)",
-    "avg_glucose_level": "Average glucose level (mg/dl)",
-    "bmi": "Body Mass Index (kg/m**2)",
-}
-for i, ax in enumerate(axs.flatten()):
-    sns.histplot(
-        x=vars[i], 
-        data=data, 
-        kde=True, 
-        ax=ax
+    # Rename categories of hypertensions, heart_disease and stroke
+    data["hypertension"] = data["hypertension"].cat.rename_categories(
+        {0: "Yes", 1: "No"}
     )
-    ax.set_title(f"Distribution of\n{titles[vars[i]]}", fontsize=9)
-    ax.set_xlabel(xlabels[vars[i]], fontsize=8)
-    if i not in [0, 3]:
-        ax.set_ylabel(None)
-fig.tight_layout()
-plt.show()
+    data["heart_disease"] = data["heart_disease"].cat.rename_categories(
+        {0: "Yes", 1: "No"}
+    )
 
-### Demographc data insights ###
-dem_data = data.copy()
-dem_data["stroke"] = pd.Categorical(dem_data["stroke"])
-dem_data["stroke"] = dem_data["stroke"].cat.rename_categories(
-    {0: "Yes", 1: "No"}
-)
+    # How many "Other" in gender are there? --> only 1 --> Reason: see report
+    print("Value counts", data["gender"].value_counts())
+    data.drop(data[data["gender"] == "Other"].index, axis = 0, inplace = True)
+    data["gender"] = data["gender"].astype('object')
+    data["gender"] = pd.Categorical(data["gender"])
+    data.reset_index(drop = True, inplace = True)
+    print("Value counts", data["gender"].value_counts())
 
-# Age distribution
-fig, ax = plt.subplots(1, 2, figsize = (12,6))
+    # Are there any duplicates? --> NO
+    print(dict(data.duplicated(subset = ["id"], keep = False)) == True)
 
-# Plot the age distribution separated by outcome
-age = sns.histplot(dem_data, x = "age", binwidth = 5, hue = "stroke", ax = ax[0])
-label_axes = age.set(xlabel = "Age [year]", ylabel = "Number of Patients", title = "Age Distribution by Stroke Outcome")
 
-# Plot age dispersion separated by gender
-age_range = sns.boxplot(dem_data, y = "age", x = "gender", hue = "stroke", ax = ax[1], width = 0.4)
-age_range = age_range.set(ylabel = "Age [year]", xlabel='Gender', title= 'Age Range split by Gender and Stroke Outcome')
-plt.show()
+    ### Summarising data in more detail ###
+    # Distribution of continuous variables 
+    # Does not work as we have too many features --> use another test
+    """
+    for var in data.dtypes[data.dtypes == "float64"].index:
+        print(f"Shapiro-Wilk for {var}, p-value: {sts.shapiro(data[var]).pvalue: .10f}")
+    """
+    # Use this instead
+    for var in data.dtypes[data.dtypes == "float64"].index:
+        print(f"Normality test for {var}, p-value: {sts.normaltest(data[var]).pvalue: .10f}")
+
+    # Distribution of continuous variables
+    vars = data.dtypes[data.dtypes == "float64"].index.tolist()
+    fig, axs = plt.subplots(nrows=1, ncols=3, sharey=True, figsize=(12, 8))
+    titles = {
+        "age": "Age",
+        "avg_glucose_level": "Average glucose level",
+        "bmi": "Body Mass Index",
+    }
+
+    xlabels = {
+        "age": "Age (years)",
+        "avg_glucose_level": "Average glucose level (mg/dl)",
+        "bmi": "Body Mass Index (kg/m**2)",
+    }
+    for i, ax in enumerate(axs.flatten()):
+        sns.histplot(
+            x=vars[i], 
+            data=data, 
+            kde=True, 
+            ax=ax
+        )
+        ax.set_title(f"Distribution of\n{titles[vars[i]]}", fontsize=9)
+        ax.set_xlabel(xlabels[vars[i]], fontsize=8)
+        if i not in [0, 3]:
+            ax.set_ylabel(None)
+    fig.tight_layout()
+    plt.show()
+
+    ### Demographc data insights ###
+    dem_data = data.copy()
+    dem_data["stroke"] = pd.Categorical(dem_data["stroke"])
+    dem_data["stroke"] = dem_data["stroke"].cat.rename_categories(
+        {0: "Yes", 1: "No"}
+    )
+
+    # Age distribution
+    fig, ax = plt.subplots(1, 2, figsize = (12,6))
+
+    # Plot the age distribution separated by outcome
+    age = sns.histplot(dem_data, x = "age", binwidth = 5, hue = "stroke", ax = ax[0])
+    label_axes = age.set(xlabel = "Age [year]", ylabel = "Number of Patients", title = "Age Distribution by Stroke Outcome")
+
+    # Plot age dispersion separated by gender
+    age_range = sns.boxplot(dem_data, y = "age", x = "gender", hue = "stroke", ax = ax[1], width = 0.4)
+    age_range = age_range.set(ylabel = "Age [year]", xlabel='Gender', title= 'Age Range split by Gender and Stroke Outcome')
+    plt.show()
 
 
 ### One-hot endoding --> all use the same --> do not define in any other function ###
 
 
-### Test and training data set split ###
+### Test/train splits and data encoding ###
+def split_and_encode(data):
+    cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']
+    encoded_df = data
+    encoded_df = pd.get_dummies(encoded_df, columns = cat_columns, prefix = cat_columns, drop_first = True)
+    
+    X = encoded_df.drop("stroke", axis = 1)
+    y = encoded_df["stroke"]
+
+    #default of train test_split is stratified, so no need for specification
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56)
+
+    return X_train, X_test, y_train, y_test
+
+### Scaling the data using Robust Scaler ###
+def scale_data(X_train, X_test):
+    scaler = RobustScaler() #Using robust because data not normally distributed
+    num_cols = ['age', 'avg_glucose_level', 'bmi']
+    X_train_scaled, X_test_scaled = X_train, X_test
+    X_train_scaled[num_cols] = scaler.fit_transform(X_train[num_cols]) 
+    X_test_scaled[num_cols] = scaler.transform(X_test[num_cols])
+
+    return X_train_scaled, X_test_scaled
+
+### Calling split, encode and scaling functions ###
+
+X_train, X_test, y_train, y_test = split_and_encode(data)
+X_train_scaled, X_test_scaled = scale_data(X_train, X_test)
+   
+
 
 
 
 """ Correlation estimation code """
 # show correlation --> needed?
-corr_plot= sns.pairplot(data=data, x_vars=vars, y_vars=vars)
-corr_plot.fig.suptitle("Correlation between continuous variables", y = 1)
-plt.show()
+def correlation_plot():
+    corr_plot= sns.pairplot(data=data, x_vars=vars, y_vars=vars)
+    corr_plot.fig.suptitle("Correlation between continuous variables", y = 1)
+    plt.show()
 
 def estimate_correlation(data):
     num_cols = ['age', 'avg_glucose_level', 'bmi']
@@ -207,8 +238,9 @@ def estimate_correlation(data):
             print("            No significant correlation")
         print()
 
-""" BMI estimation code """
 
+
+""" BMI estimation code """
 def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
     ### Only use for BMI estimation scores ###
 
@@ -324,7 +356,8 @@ def bmi_main():
     print(test[['hypertension', 'heart_disease']])
     print(truncation.iloc[1:10])
     """
-    
+
+"""Test for normality"""    
 def Kolmogorov_Smirnov(df):
     # Kolgorov_Smirnov test for normality with transformations
     for i in ['age', 'avg_glucose_level', 'bmi']:
@@ -353,7 +386,7 @@ def KNN(data): # Or: def KNN(X_train, X_test, y_train, y_test), has to be scaled
     # K tuning
     # Selection of the optimal k value. K is a hyperparameter. There is no one proper method of estimation. K should be an odd number.
     # Square Root Method is used: Square root of the number of samples in the training dataset.
-    k_neighbors = sqrt(len(y_train)
+    k_neighbors = math.sqrt(len(y_train))
     
     # Define the model: Initiate KNN
     classifier = KNeighborsClassifier(n_neighbors = k_neighbors, metric = 'euclidean')
@@ -365,6 +398,7 @@ def KNN(data): # Or: def KNN(X_train, X_test, y_train, y_test), has to be scaled
     
     # Evaluation of model
     cm = confusion_matrix(y_test, y_pred)
+    """
     print("Confusion Matrix of KNN:"\n cm)
     
     accuracy_score = accuracy_score(y_test, y_pred)
@@ -372,6 +406,7 @@ def KNN(data): # Or: def KNN(X_train, X_test, y_train, y_test), has to be scaled
     
     f1_score = f1_score(y_test, y_pred)
     print("F1 Score of KNN:"\n f1_score)
+    """
     
     
 """Random Forest"""
@@ -420,3 +455,5 @@ def evaluation_metrics(tcl, y, X, ax, legend_entry = "my legendEntry"):
     return [accuracy,precision,recall,specificity,f1, roc_auc]
 
 def random_forest()
+
+print('hello World')
