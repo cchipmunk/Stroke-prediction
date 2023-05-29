@@ -6,16 +6,12 @@ from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.spatial.distance import euclidean, cityblock, minkowski
 from sklearn import cluster, datasets, mixture, svm
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import StandardScaler, RobustScaler
-from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_curve, confusion_matrix, auc
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.metrics import f1_score
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score, recall_score, roc_curve
+from sklearn.metrics import mean_squared_error, r2_score, f1_score, accuracy_score, precision_score, recall_score, roc_curve, auc
 import matplotlib.pyplot as plt
 import math
 import seaborn as sns
@@ -272,6 +268,90 @@ def Kolmogorov_Smirnov(df):
         print()
 
 """Logstic Regression"""
+def logistic_regression(X,y,n_splits):
+    # 0.1) Calculate multicollinearity variance inflation factor (VIF)
+    # to ensure that indepentend variables do not correlate with each other?
+    # 0.2) Imbalanced or balanced -> look at how many have a stroke and how many do not
+    # 1) Get data -> X and y
+
+    # 2) Create a model and train it
+    model = LogisticRegression(solver='liblinear', C=10.0, random_state=0)
+    model.fit(X, y)
+
+    # 3) Evaluation metrics: Perform a n-fold crossvalidation - prepare the splits
+    skf      = StratifiedKFold(n_splits=n_splits)
+
+    # Prepare the performance overview data frame
+    df_performance = pd.DataFrame(columns = ['fold','clf','accuracy','precision','recall',
+                                             'specificity','F1','roc_auc'])
+    df_LR_normcoef = pd.DataFrame(index = X.columns, columns = np.arange(n_splits))
+
+    # Use this counter to save your performance metrics for each crossvalidation fold
+    # also plot the roc curve for each model and fold into a joint subplot
+    fold = 0
+    fig,axs = plt.subplots(figsize=(9, 4))
+
+    # Loop over all splits
+    for train_index, test_index in skf.split(X, y):
+
+        # Get the relevant subsets for training and testing
+        X_test  = X.iloc[test_index]
+        y_test  = y.iloc[test_index]
+        X_train = X.iloc[train_index]
+        y_train = y.iloc[train_index]
+
+        # Standardize the numerical features using training set statistics
+        sc = StandardScaler()
+        X_train_sc = sc.fit_transform(X_train)
+        X_test_sc  = sc.transform(X_test)
+
+        # Creat prediction models and fit them to the training data
+        # Logistic regression
+        clf = LogisticRegression(random_state=1)
+        clf.fit(X_train_sc, y_train)
+
+        # Get the top 5 features that contribute most to the classification
+        df_this_LR_coefs       = pd.DataFrame(zip(X_train.columns, np.transpose(clf.coef_[0])), columns=['features', 'coef'])
+        df_LR_normcoef.loc[:,fold] = df_this_LR_coefs['coef'].values/df_this_LR_coefs['coef'].abs().sum()
+
+        # Evaluate your classifiers
+        eval_metrics = evaluation_metrics(clf, y_test, X_test_sc, axs,legend_entry=str(fold))
+        df_performance.loc[len(df_performance)-1,:] = [fold,'LR']+eval_metrics
+
+        # increase counter for folds
+        fold += 1
+
+    axs.set_xlabel('FPR')
+    axs.set_ylabel('TPR')
+    add_identity(axs, color="r", ls="--",label = 'random\nclassifier')
+    axs.legend()
+    axs.title.set_text("LR")
+    plt.tight_layout()
+    plt.savefig('../output/roc_curves.png')
+
+    # Summarize the folds
+    print(df_performance.groupby(by = 'clf').mean())
+    print(df_performance.groupby(by = 'clf').std())
+
+    # Get the top features - evaluate the coefficients across the n folds
+    df_LR_normcoef['importance_mean'] = df_LR_normcoef.mean(axis =1)
+    df_LR_normcoef['importance_std']  = df_LR_normcoef.std(axis =1)
+    df_LR_normcoef['importance_abs_mean'] = df_LR_normcoef.abs().mean(axis =1)
+    df_LR_normcoef.sort_values('importance_abs_mean', inplace = True, ascending=False)
+
+    # Visualize the normalized feature importance across the n folds and add error bar to indicate the std
+    fig, ax = plt.subplots()
+    ax.bar(np.arange(15), df_LR_normcoef['importance_abs_mean'][:15], yerr=df_LR_normcoef['importance_std'][:15])
+    ax.set_xticks(np.arange(15), df_LR_normcoef.index.tolist()[:15], rotation=90)
+    ax.set_title("Normalized feature importance for LR across 5 folds", fontsize=16)
+    plt.xlabel('Feature', fontsize=8)
+    plt.ylabel("Normalized feature importance", fontsize=8)
+    plt.tight_layout()
+    plt.savefig('../output/feature_importance.png')
+
+    # Get the two most important features and the relevant sign:
+    df_LR_normcoef.index[:2]
+    df_LR_normcoef['importance_mean'][:2]
 
 
 """K-Nearest Neighbour (KNN) Model"""
@@ -672,5 +752,5 @@ X_train_scaled, X_test_scaled = scale_data(X_train, X_test)
 
 # estimate_correlation(data)
 random_forest(X, y, 5)
-
+logistic_regresseion(X,y,5)
 smoking_model(X_train_scaled)
