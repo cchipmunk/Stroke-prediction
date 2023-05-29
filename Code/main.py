@@ -406,7 +406,7 @@ def KNN(X_train_scaled,X_test_scaled,y_train,y_test):
 
 print('hello World')
 
-def smoking_model (X_train_scaled, data):
+def smoking_model (X_train_scaled):
 
     ###                                             ###
     ### Step 1: Reverse the one hot encoding :'(    ###
@@ -437,6 +437,8 @@ def smoking_model (X_train_scaled, data):
     df['smoking_status'] = sm_col
     df.drop(['smoking_status_never smoked', 'smoking_status_smokes', 'smoking_status_formerly smoked'], axis = 1)
     
+    df = df.loc[df['smoking_status'] != 'unknown']
+
     X = df.drop(['smoking_status'], axis = 1)
     y = df[['smoking_status']]
 
@@ -444,34 +446,27 @@ def smoking_model (X_train_scaled, data):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56)
 
+    #step 3 : model and hyperparameter tuning
 
-    """
-    #Saving indeces of our Train/test split
-    indexes = X_train_scaled.index
-    #Selecting only training split to avoid data leakage
-    df = data.iloc[indexes]
+    clf = KNeighborsClassifier(n_neighbors = 8, metric = 'euclidean')
+    clf.fit(X_train, y_train)
 
-    cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type']    
-    encoded_df = df
-    encoded_df = pd.get_dummies(encoded_df, columns = cat_columns, prefix = cat_columns, drop_first = True)
-
-    X = encoded_df.drop("smoking_status", axis = 1)
-    y = encoded_df["smoking_status"]
-    """
-    """
-    print(X_train_scaled.columns)
-    df = X_train_scaled
-    print(df.shape[0])
-    df = df.loc[df['smoking_status_never smoked'] == 0]
-    df = df.loc[df['smoking_status_smokes'] == 0]
-    df = df.loc[df['smoking_status_formerly smoked'] == 0]
-    print(df.shape[0])
+    y_pred = clf.predict(X_test)
+    y_simp = ['never smoked' for i in range(len(y_pred))]
+    print(" ### Smoking model performance ###")
+    print("Precision:", precision_score(y_test, y_pred, average='macro'))
+    print("Recall:", recall_score(y_test, y_pred, average='macro'))
+    print("F1 score", f1_score(y_test, y_pred, average='macro'))
+    print()
+    print(" ###  simple model performance ###")
+    print("Precision:", precision_score(y_test, y_simp, average='macro'))
+    print("Recall:", recall_score(y_test, y_simp, average='macro'))
+    print("F1 score", f1_score(y_test, y_simp, average='macro'))
 
 
+    print(sm_col.value_counts())
 
-    X = df.drop(["smoking_status_never smoked", axis = 1)
-    y = df['smoking_status']
-    """
+    # Step 4 Saving the data in truncated data set.
 
 def support_v_m(X_train_scaled, y_train_scaled, y_train, y_test):
 
@@ -498,4 +493,4 @@ def support_v_m(X_train_scaled, y_train_scaled, y_train, y_test):
     plt.title("Support Vector - ROC curve")
     plt.show()  
 
-smoking_model(X_train_scaled, data)
+smoking_model(X_train_scaled)
