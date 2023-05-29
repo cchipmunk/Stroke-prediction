@@ -4,7 +4,7 @@ from scipy import stats
 import scipy.stats as sts
 from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.spatial.distance import euclidean, cityblock, minkowski
-from sklearn import cluster, datasets, mixture
+from sklearn import cluster, datasets, mixture, svm
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, RobustScaler
@@ -15,6 +15,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score, recall_score, roc_curve
 import matplotlib.pyplot as plt
 import math
 import seaborn as sns
@@ -380,37 +381,34 @@ def Kolmogorov_Smirnov(df):
 
 
 """K-Nearest Neighbour (KNN) Model"""
-def KNN(data): # Or: def KNN(X_train, X_test, y_train, y_test), has to be scaled
+def KNN(X_train_scaled,X_test_scaled,y_train,y_test): 
    
-    # Definition of X and y ??? -> X_train, X_test, y_train, y_test
-    X = data[['gender','age','hypertension','heart_disease','ever_married','work_type','Residence_type','avg_glucose_level','bmi','smoking_status']]
-    y = data['stroke']
-    
-    # Standardization - necessary ???
-    X = StandardScaler().fit_transform(X)
-    
     # K tuning
     # Selection of the optimal k value. K is a hyperparameter. There is no one proper method of estimation. K should be an odd number.
     # Square Root Method is used: Square root of the number of samples in the training dataset.
-    k_neighbors = math.sqrt(len(y_train))
+    k_neighbors = round(math.sqrt(len(y_train)))
     
     # Define the model: Initiate KNN
     classifier = KNeighborsClassifier(n_neighbors = k_neighbors, metric = 'euclidean')
     # Euclidean Distance used: It is the most commonly used distance formula in machine learning.
-    classifier.fit(X_train, y_train)
+    classifier.fit(X_train_scaled, y_train)
     
     # Predict the test results
-    y_pred = classifier.predict(X_test)
+    y_pred = classifier.predict(X_test_scaled)
     
     # Evaluation of model
     cm = confusion_matrix(y_test, y_pred)
     """
     print("Confusion Matrix of KNN:"\n cm)
+    """
     
     accuracy_score = accuracy_score(y_test, y_pred)
+    """
     print("Accuracy Score of KNN:"\n accuracy_score)
+    """
     
     f1_score = f1_score(y_test, y_pred)
+    """
     print("F1 Score of KNN:"\n f1_score)
     """
     
@@ -542,3 +540,98 @@ def random_forest(X, y, n_splits):
 
 
 random_forest(X, y, 5)
+print('hello World')
+
+def smoking_model (X_train_scaled, data):
+
+    ###                                             ###
+    ### Step 1: Reverse the one hot encoding :'(    ###
+    ###                                             ###
+
+    #Using scaled and encoded data
+    df = X_train_scaled
+    #Creating df with only smoking data
+    smoker_information = df[['smoking_status_never smoked', 'smoking_status_smokes', 'smoking_status_formerly smoked']]
+    #Selecting column names of the one hot encoding and saving them in new column
+    smoker_information['smoking_status'] = smoker_information.idxmax(axis = 1)
+    sm_col = smoker_information['smoking_status']
+
+    #Editing the names
+    for i in sm_col.index:
+        if sm_col[i] == 'smoking_status_never smoked':
+            #because we used drop first in the one hot encoding, the "unknown" values are dropped. 
+            #Using the idx function with 3 False values the first one is stored as max
+            #We use this function to check if in reality the value saved as "neversmoked" are not just "unknown"
+            if smoker_information['smoking_status_never smoked'][i] == False:
+                sm_col[i] = 'unknown'
+            else:
+                sm_col[i] = 'never smoked'
+        elif sm_col[i] == 'smoking_status_formerly smoked':
+            sm_col[i] = 'formerly smoked'
+        elif sm_col[i] == 'smoking_status_smokes':
+            sm_col[i] = 'smokes'
+    df['smoking_status'] = sm_col
+    df.drop(['smoking_status_never smoked', 'smoking_status_smokes', 'smoking_status_formerly smoked'], axis = 1)
+    
+    X = df.drop(['smoking_status'], axis = 1)
+    y = df[['smoking_status']]
+
+    #step 2: train test splits
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56)
+
+
+    """
+    #Saving indeces of our Train/test split
+    indexes = X_train_scaled.index
+    #Selecting only training split to avoid data leakage
+    df = data.iloc[indexes]
+
+    cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type']    
+    encoded_df = df
+    encoded_df = pd.get_dummies(encoded_df, columns = cat_columns, prefix = cat_columns, drop_first = True)
+
+    X = encoded_df.drop("smoking_status", axis = 1)
+    y = encoded_df["smoking_status"]
+    """
+    """
+    print(X_train_scaled.columns)
+    df = X_train_scaled
+    print(df.shape[0])
+    df = df.loc[df['smoking_status_never smoked'] == 0]
+    df = df.loc[df['smoking_status_smokes'] == 0]
+    df = df.loc[df['smoking_status_formerly smoked'] == 0]
+    print(df.shape[0])
+
+
+
+    X = df.drop(["smoking_status_never smoked", axis = 1)
+    y = df['smoking_status']
+    """
+
+def support_v_m(X_train_scaled, y_train_scaled, y_train, y_test):
+
+    clf = svm.SVC(kernel = 'linear', C=5)
+    clf.fit(X_train_scaled, y_train)
+
+    y_pred = (clf.predict(X_test_scaled))
+
+    print(clf.score(X_test_scaled, y_test))
+
+    print(len(y_pred))
+    print(len(y_test))
+
+
+    print("Precision:", precision_score(y_test, y_pred))
+    print("Recall:", recall_score(y_test, y_pred))
+    print("F1 score", f1_score(y_test, y_pred))
+    
+    fpr,tpr, _ = roc_curve(y_test, y_pred)
+
+    plt.plot(fpr,tpr)
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.title("Support Vector - ROC curve")
+    plt.show()  
+
+smoking_model(X_train_scaled, data)
