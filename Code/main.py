@@ -453,6 +453,8 @@ def estimate_correlation(data):
             print("            No significant correlation")
         print()
 
+"""Load data and preprocessing"""
+
 ### Load the data ### 
 df_path = "../Data/Truncated_data/Stroke_data.csv"
 data = pd.read_csv(df_path)
@@ -623,17 +625,7 @@ X_train_scaled, X_test_scaled = scale_data(X_train, X_test)
    
 
 
-
-
-
 # estimate_correlation(data)
-
-
-
-
-
 random_forest(X, y, 5)
-
-
 
 smoking_model(X_train_scaled, data)
