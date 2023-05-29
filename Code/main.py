@@ -8,6 +8,7 @@ from sklearn import cluster, datasets, mixture
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, RobustScaler
+from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_curve, confusion_matrix, auc
 from sklearn.linear_model import LinearRegression
@@ -30,7 +31,7 @@ warnings.filterwarnings("ignore")
 
 
 ### Load the data ### 
-df_path = "./Data/Truncated_data/Stroke_data.csv"
+df_path = "../Data/Truncated_data/Stroke_data.csv"
 data = pd.read_csv(df_path)
 
 ### Data Exploration ###
@@ -165,16 +166,20 @@ def data_exploration():
 ### One-hot endoding --> all use the same --> do not define in any other function ###
 
 
+
 ### Test/train splits and data encoding ###
 def split_and_encode(data):
-    cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']
+    cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status'] # TODO add 2 further categorical data!
     encoded_df = data
     encoded_df = pd.get_dummies(encoded_df, columns = cat_columns, prefix = cat_columns, drop_first = True)
     
     X = encoded_df.drop("stroke", axis = 1)
     y = encoded_df["stroke"]
 
-    #default of train test_split is stratified, so no need for specification
+    return X, y
+
+def do_train_test_split(X, y):
+    # default of train test_split is stratified, so no need for specification --> TODO wrong!! stratify = y
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56)
 
     return X_train, X_test, y_train, y_test
@@ -191,11 +196,12 @@ def scale_data(X_train, X_test):
 
 ### Calling split, encode and scaling functions ###
 
-X_train, X_test, y_train, y_test = split_and_encode(data)
+X, y = split_and_encode(data)
+
+X_train, X_test, y_train, y_test = do_train_test_split(X, y)
+
 X_train_scaled, X_test_scaled = scale_data(X_train, X_test)
    
-
-
 
 
 """ Correlation estimation code """
@@ -370,7 +376,7 @@ def Kolmogorov_Smirnov(df):
         print(f"probability that {i} is normaly distributed with log transformation = {1 - res.statistic}")
         print()
 
-estimate_correlation(data)
+# estimate_correlation(data)
 
 
 """K-Nearest Neighbour (KNN) Model"""
@@ -410,6 +416,20 @@ def KNN(data): # Or: def KNN(X_train, X_test, y_train, y_test), has to be scaled
     
     
 """Random Forest"""
+# Plot the diagonal line 
+def add_identity(axes, *line_args, **line_kwargs):
+    identity, = axes.plot([], [], *line_args, **line_kwargs)
+    def callback(axes):
+        low_x, high_x = axes.get_xlim()
+        low_y, high_y = axes.get_ylim()
+        low = max(low_x, low_y)
+        high = min(high_x, high_y)
+        identity.set_data([low, high], [low, high])
+    callback(axes)
+    axes.callbacks.connect('xlim_changed', callback)
+    axes.callbacks.connect('ylim_changed', callback)
+    return axes
+
 def evaluation_metrics(tcl, y, X, ax, legend_entry = "my legendEntry"):
     """
     Comput evaluation metrics for provided classifier given true labels and input features
@@ -430,7 +450,7 @@ def evaluation_metrics(tcl, y, X, ax, legend_entry = "my legendEntry"):
     """
 
     # Get label prediction
-    y_test_pred = clf.predict(X)
+    y_test_pred = tcl.predict(X)
 
     # Calculate confusion matrix
     tn, fp, fn, tp = confusion_matrix(y, y_test_pred).ravel()
@@ -443,7 +463,7 @@ def evaluation_metrics(tcl, y, X, ax, legend_entry = "my legendEntry"):
     f1          = tp / (tp + 0.5 * (fn + fp))
 
     # Get the roc curve using sklearn function
-    y_test_predict_proba = clf.predict_proba(X)
+    y_test_predict_proba = tcl.predict_proba(X)
     fp_rates, tp_rates, _ = roc_curve(y, y_test_predict_proba[:,1])
 
     # Calculate the area under the roc curve using a sklearn function
@@ -454,6 +474,71 @@ def evaluation_metrics(tcl, y, X, ax, legend_entry = "my legendEntry"):
 
     return [accuracy,precision,recall,specificity,f1, roc_auc]
 
-def random_forest()
+def random_forest(X, y, n_splits):
+    """
+    Random forest function
 
-print('hello World')
+    X: data
+
+    y: true outcomes
+
+    n_splits: number of splits for Stratified KFolds because of inbalanced data, integer
+    """
+
+    skf = StratifiedKFold(n_splits = n_splits, shuffle = True, random_state = 50)
+
+    # Prepare the performance overview data frame
+    df_performance = pd.DataFrame(columns = ['fold','clf','accuracy','precision','recall',
+                                            'specificity','F1','roc_auc'])
+    df_LR_normcoef = pd.DataFrame(index = X.columns, columns = np.arange(n_splits))
+
+    # Plot to save performance metrics
+    fold = 0
+    fig, axs = plt.subplots(figsize=(9, 4))
+
+    # Loop over all splits
+    for train_index, test_index in skf.split(X, y):
+        # Get the relevant subsets for training and testing
+        X_test  = X.iloc[test_index]
+        y_test  = y.iloc[test_index]
+        X_train = X.iloc[train_index]
+        y_train = y.iloc[train_index]
+
+
+        # Standardize the numerical features using training set statistics
+        sc = StandardScaler()
+        X_train_sc = sc.fit_transform(X_train)
+        X_test_sc  = sc.transform(X_test)
+
+        # Random forest
+        tcl = RandomForestClassifier(random_state = 50)
+
+        # Fit
+        tcl.fit(X_train_sc, y_train)
+
+        # Evaluate classifiers using evaluation metrics
+        eval_metrics_RF = evaluation_metrics(tcl, y_test, X_test_sc, axs, legend_entry=str(fold)) 
+        df_performance.loc[len(df_performance), :] = [fold, 'RF'] + eval_metrics_RF
+
+        # Increase counter for folds
+        fold += 1
+
+    # Edit plot
+    model_name = "Random Forest"
+    axs.set_xlabel("FPR")
+    axs.set_ylabel("TPR")
+    add_identity(axs, color="r", ls="--",label = 'random\nclassifier')
+    plt.legend()
+    axs.set_title(f"ROC curve of {model_name}", fontsize=9)
+
+    # Save the plot 
+    plt.tight_layout()
+    # plt.savefig('../output/roc_curves.png')
+    plt.show()
+
+    # Summarize the performance metrics over all folds
+    print(df_performance.groupby(by = 'clf').mean())
+    print(df_performance.groupby(by = 'clf').std())
+
+
+random_forest(X, y, 5)
