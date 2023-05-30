@@ -723,7 +723,7 @@ def split_and_encode(data):
     encoded_df = data
     encoded_df = pd.get_dummies(encoded_df, columns = cat_columns, prefix = cat_columns, drop_first = True)
     
-    X = encoded_df.drop("stroke", axis = 1)
+    X = encoded_df.drop(["stroke", "Unnamed: 0", "id"], axis = 1)
     y = encoded_df["stroke"]
 
     return X, y
