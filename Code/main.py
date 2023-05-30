@@ -583,22 +583,29 @@ df_path = "../Data/Truncated_data/Stroke_data.csv"
 data = pd.read_csv(df_path)
 
 ### Data Exploration ###
-def data_exploration():
+def data_exploration(data):
     # Look at data
+    # Look at Head
+    print(data.head())
+
     # Row and column number 
     print("rows:", data.shape[0], "columns:", data.shape[1])
 
     # Data types
     print(data.dtypes)
 
-    # Missing values --> fill in with other data --> see bmi
+    # Missing values --> fill in with other data --> see bmi and smoking
     print(data.isna().sum(axis = 0)) 
 
     # How many patients have all attributes present?
     print((data.isna().sum(axis=1) == 0).sum())
 
     # How is the outcome (stroke) distributed?
-    data["stroke"].value_counts()
+    print("Distribution: \n", data["stroke"].value_counts())
+
+    # Number of females and males with stroke
+    print("Female:", len(data[(data["gender"] == "Female") & (data["stroke"] == 1)]))
+    print("Male:", len(data[(data["gender"] == "Male") & (data["stroke"] == 1)]))
 
     # Number of groups in the object data frames
     print('There are', data.groupby('gender').ngroups,'unique genders in the data.') # Three --> display those?
@@ -651,7 +658,6 @@ def data_exploration():
     # Are there any duplicates? --> NO
     print(dict(data.duplicated(subset = ["id"], keep = False)) == True)
 
-
     ### Summarising data in more detail ###
     # Distribution of continuous variables 
     # Does not work as we have too many features --> use another test
@@ -695,7 +701,7 @@ def data_exploration():
     dem_data = data.copy()
     dem_data["stroke"] = pd.Categorical(dem_data["stroke"])
     dem_data["stroke"] = dem_data["stroke"].cat.rename_categories(
-        {0: "Yes", 1: "No"}
+        {0: "No", 1: "Yes"}
     )
 
     # Age distribution
@@ -703,7 +709,7 @@ def data_exploration():
 
     # Plot the age distribution separated by outcome
     age = sns.histplot(dem_data, x = "age", binwidth = 5, hue = "stroke", ax = ax[0])
-    label_axes = age.set(xlabel = "Age [year]", ylabel = "Number of Patients", title = "Age Distribution by Stroke Outcome")
+    age.set(xlabel = "Age [year]", ylabel = "Number of Patients", title = "Age Distribution by Stroke Outcome")
 
     # Plot age dispersion separated by gender
     age_range = sns.boxplot(dem_data, y = "age", x = "gender", hue = "stroke", ax = ax[1], width = 0.4)
@@ -739,6 +745,7 @@ def scale_data(X_train, X_test):
     return X_train_scaled, X_test_scaled
 
 ### Calling split, encode and scaling functions ###
+data_exploration(data)
 
 X, y = split_and_encode(data)
 
