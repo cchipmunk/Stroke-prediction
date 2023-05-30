@@ -350,6 +350,12 @@ def logistic_regression(X,y,n_splits):
     # Get the two most important features and the relevant sign:
     df_LR_normcoef.index[:2]
     df_LR_normcoef['importance_mean'][:2]
+    
+    # Summarize the performance metrics over all folds (with std)
+    df_mean_std_performance = df_performance.drop('fold', axis=1).groupby('clf').agg(['mean', 'std'])
+    df_mean_std_performance.columns = ['_'.join(col).strip() for col in df_mean_std_performance.columns.values]
+    df_mean_std_performance = df_mean_std_performance.reset_index()
+    df_mean_std_performance.to_csv('../output/LR_mean_std_performance.csv', index=False)
 
 
 """K-Nearest Neighbour (KNN) Model"""
