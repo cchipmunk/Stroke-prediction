@@ -382,21 +382,17 @@ def KNN(X_train_scaled,X_test_scaled,y_train,y_test):
     # Predict the test results
     y_pred = classifier.predict(X_test_scaled)
     
+    
     # Evaluation of model
     cm = confusion_matrix(y_test, y_pred)
-    """
-    print("Confusion Matrix of KNN:"\n cm)
-    """
+    print("Confusion Matrix of KNN:", cm)
     
-    accuracy_score = accuracy_score(y_test, y_pred)
-    """
-    print("Accuracy Score of KNN:"\n accuracy_score)
-    """
+    accuracy = accuracy_score(y_test, y_pred)
+    print("Accuracy Score of KNN:", accuracy)
     
-    f1_score = f1_score(y_test, y_pred)
-    """
-    print("F1 Score of KNN:"\n f1_score)
-    """
+    f1 = f1_score(y_test, y_pred)
+    print("F1 Score of KNN:", f1)
+    
     
 """Random Forest"""
 # Plot the diagonal line 
