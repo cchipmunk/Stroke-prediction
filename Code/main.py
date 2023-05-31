@@ -7,7 +7,7 @@ from scipy.spatial.distance import euclidean, cityblock, minkowski
 from sklearn import cluster, datasets, mixture, svm
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold
-from sklearn.preprocessing import StandardScaler, RobustScaler
+from sklearn.preprocessing import RobustScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_curve, confusion_matrix, auc
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -307,9 +307,9 @@ def logistic_regression(X,y,n_splits):
         y_train = y.iloc[train_index]
 
         # Standardize the numerical features using training set statistics
-        sc = StandardScaler()
-        X_train_sc = sc.fit_transform(X_train)
-        X_test_sc  = sc.transform(X_test)
+        rs = RobustScaler()
+        X_train_sc = rs.fit_transform(X_train)
+        X_test_sc  = rs.transform(X_test)
 
         # Creat prediction models and fit them to the training data
         # Logistic regression
@@ -333,7 +333,7 @@ def logistic_regression(X,y,n_splits):
     axs.legend()
     axs.title.set_text("LR")
     plt.tight_layout()
-    plt.savefig('../output/roc_curves.png')
+    # plt.savefig('../output/roc_curves.png')
 
     # Summarize the folds
     print(df_performance.groupby(by = 'clf').mean())
@@ -353,7 +353,7 @@ def logistic_regression(X,y,n_splits):
     plt.xlabel('Feature', fontsize=8)
     plt.ylabel("Normalized feature importance", fontsize=8)
     plt.tight_layout()
-    plt.savefig('../output/feature_importance.png')
+    # plt.savefig('../output/feature_importance.png')
 
     # Get the two most important features and the relevant sign:
     df_LR_normcoef.index[:2]
@@ -363,7 +363,7 @@ def logistic_regression(X,y,n_splits):
     df_mean_std_performance = df_performance.drop('fold', axis=1).groupby('clf').agg(['mean', 'std'])
     df_mean_std_performance.columns = ['_'.join(col).strip() for col in df_mean_std_performance.columns.values]
     df_mean_std_performance = df_mean_std_performance.reset_index()
-    df_mean_std_performance.to_csv('../output/LR_mean_std_performance.csv', index=False)
+    # df_mean_std_performance.to_csv('../output/LR_mean_std_performance.csv', index=False)
 
 
 """K-Nearest Neighbour (KNN) Model"""
@@ -489,18 +489,18 @@ def random_forest(X, y, n_splits):
 
 
         # Standardize the numerical features using training set statistics
-        sc = RobustScaler() #because not normal distrbuted
-        X_train_sc = sc.fit_transform(X_train)
-        X_test_sc  = sc.transform(X_test)
+        rs = RobustScaler() #because not normal distrbuted
+        X_train_rs = rs.fit_transform(X_train)
+        X_test_rs  = rs.transform(X_test)
 
         # Random forest
         tcl = RandomForestClassifier(random_state = 50)
 
         # Fit
-        tcl.fit(X_train_sc, y_train)
+        tcl.fit(X_train_rs, y_train)
 
         # Evaluate classifiers using evaluation metrics
-        eval_metrics_RF = evaluation_metrics(tcl, y_test, X_test_sc, axs, legend_entry=str(fold)) 
+        eval_metrics_RF = evaluation_metrics(tcl, y_test, X_test_rs, axs, legend_entry=str(fold)) 
         df_performance.loc[len(df_performance), :] = [fold, 'RF'] + eval_metrics_RF
 
         # Increase counter for folds
@@ -639,18 +639,8 @@ def data_exploration(data):
     data["work_type"] = pd.Categorical(data["work_type"])
     data["Residence_type"] = pd.Categorical(data["Residence_type"])
     data["smoking_status"] = pd.Categorical(data["smoking_status"])
-    data["hypertension"] = pd.Categorical(data["hypertension"])
-    data["heart_disease"] = pd.Categorical(data["heart_disease"])
 
     print(data.dtypes)
-
-    # Rename categories of hypertensions, heart_disease and stroke
-    data["hypertension"] = data["hypertension"].cat.rename_categories(
-        {0: "Yes", 1: "No"}
-    )
-    data["heart_disease"] = data["heart_disease"].cat.rename_categories(
-        {0: "Yes", 1: "No"}
-    )
 
     # How many "Other" in gender are there? --> only 1, drop the person --> Reason: see report
     print("Value counts", data["gender"].value_counts())
@@ -726,12 +716,15 @@ def data_exploration(data):
 
 def encode_and_split(data):
     
-    cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status'] # TODO add 2 further categorical data!
-    encoded_df = data
+    cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']
+    encoded_df = data # TODO evtl. copy()
     encoded_df = pd.get_dummies(encoded_df, columns = cat_columns, prefix = cat_columns, drop_first = True)
 
-    encoded_df.drop(['Unnamed: 0.1', 'Unnamed: 0', 'id'], axis=1)
+    encoded_df.drop(['Unnamed: 0.1', 'Unnamed: 0', 'id'], axis=1, inplace = True)
 
+    return encoded_df
+
+def do_train_test_split(encoded_df):
     #seperating train and test set with original ids
     train_set = encoded_df.iloc[train_id]
     #Concat is necessary because iloc somehow does not work. I do not know why, but result is the same though so it's fine.
@@ -761,7 +754,7 @@ def scale_data(X_train, X_test):
     num_cols = ['age', 'avg_glucose_level', 'bmi']
     X_train_scaled, X_test_scaled = X_train, X_test
     X_train_scaled[num_cols] = scaler.fit_transform(X_train[num_cols]) 
-    X_test_scaled[num_cols] = scaler.transform(X_test[num_cols])
+    X_test_scaled[num_cols] = scaler.transform(X_test[num_cols]) #fit anstatt transform right?
 
     return X_train_scaled, X_test_scaled
 
@@ -779,20 +772,24 @@ new_bmi_model()
 df_path = "../Data/Truncated_data/Stroke_data.csv"
 data = pd.read_csv(df_path)
 
-X = data.drop(['Unnamed: 0.1', 'Unnamed: 0', 'id', 'stroke'], axis = 1)
-y = data['stroke']
+data_exploration(data)
+
+# One hot encoding
+encoded_df = encode_and_split(data)
+print(encoded_df.head())
+
+X = encoded_df.drop(['stroke'], axis = 1)
+y = encoded_df['stroke']
 
 #Encoding and spliting
-X_train, X_test, y_train, y_test = encode_and_split(data)
+X_train, X_test, y_train, y_test = do_train_test_split(encoded_df)
 
 #Scaling data
 X_train_scaled, X_test_scaled = scale_data(X_train, X_test)
 
-data_exploration(data)
-
 
 support_v_m(X_train_scaled, X_test_scaled, y_train, y_test)
-estimate_correlation(data)
+estimate_correlation(data) # Data right? not encoded_df needed?
 
 
 # KNN(X_train_scaled, X_test_scaled, y_train, y_test)
