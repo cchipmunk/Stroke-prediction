@@ -779,9 +779,6 @@ new_bmi_model()
 df_path = "../Data/Truncated_data/Stroke_data.csv"
 data = pd.read_csv(df_path)
 
-X = data.drop(['Unnamed: 0.1', 'Unnamed: 0', 'id', 'stroke'], axis = 1)
-y = data['stroke']
-
 #Encoding and spliting
 X_train, X_test, y_train, y_test = encode_and_split(data)
 
@@ -794,10 +791,10 @@ data_exploration(data)
 support_v_m(X_train_scaled, X_test_scaled, y_train, y_test)
 estimate_correlation(data)
 
-"""
+
 KNN(X_train_scaled, X_test_scaled, y_train, y_test)
-"""
-"""
+
+
 random_forest(X, y, 5)
 logistic_regression(X,y,5)
-"""
+
