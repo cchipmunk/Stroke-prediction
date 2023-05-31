@@ -30,6 +30,32 @@ warnings.filterwarnings("ignore")
 
 """ All Models """
 """ BMI estimation code """
+def get_ids():
+    #gets train test split ids.
+    #This is necessary because we at first truncate the data and then estimate our stroke prediction model.
+    #To prevent all data leakage, we want our truncation models to only be trained and tested within the Training data of our final model.
+    global og_data
+
+    og_data = pd.read_csv("./Data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv")
+    #dropping value because lonely
+    og_data = og_data[og_data['gender'] != 'Other']
+
+    X = og_data.drop('stroke', axis = 1)
+    y = og_data['stroke']
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56, stratify = y)
+
+    global train_id
+    global test_id
+
+    train_id = X_train.index
+    test_id = X_test.index
+
+    print(train_id)
+    print(test_id)
+    print('Train test split ids have been generated')
+
+
 def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
     ### Only use for BMI estimation scores ###
 
@@ -49,102 +75,6 @@ def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
     print('Test set score: R2 score: {:.3f}, RMSE: {:.3f}'.format(r2_test, rmse_test))
     print('Score using means (no model): R2 score: {:.3f}, RMSE: {:.3f}'.format(r2_mean, rmse_mean))
 
-def bmi_train(data): #Parametric Model should be changed to non parametric because data is not normally distributed :"(
-    print()
-    df = data.loc[data['bmi'].notna()] #Dropping values without labels
-    df = df.drop(['stroke'], axis = 1) # We do not want strokes in our model, as we will be estimating it later (Data leakage)
-
-    encoded_df = df #One hot encoding the columns
-    for i in ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']:
-        encoded_df = pd.get_dummies(encoded_df, columns = [i], prefix = [i], drop_first = True )
-
-    #dropping irrelevant Columns for our model (feature selection)
-    encoded_df = encoded_df.drop(['Residence_type_Urban', 'gender_Male', 'id', 'work_type_Private', 'work_type_Self-employed'], axis=1)
-
-    #Creating Labels and Features
-    X = encoded_df.drop('bmi', axis=1)
-    y = encoded_df['bmi']
-
-    #Seperating into train / test data-set
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56)
-    
-    #Scaling the data
-    global scaler
-    global num_cols
-
-    scaler = RobustScaler() #Using robust because data not normally distributed
-    num_cols = ['age', 'avg_glucose_level']
-    X_train_scaled, X_test_scaled = X_train, X_test
-    X_train_scaled[num_cols] = scaler.fit_transform(X_train[num_cols]) 
-    X_test_scaled[num_cols] = scaler.transform(X_test[num_cols])
-
-    #Training the model
-    global LR
-
-    LR = LinearRegression()
-    LR.fit(X_train_scaled, y_train)
-    
-    #Creating a Model which calculates the mean for every estimated value as comparaison
-    y_mean = [mean(y)] * len(y_test)
-
-    #Evaluating performance
-    bmi_scores(LR, X_train, y_train, X_test, y_test, y_mean)
-
-def bmi_main():
-    
-    #importing Data, seperating the data which needs truncation from the known data
-    #LEAVE THE PATH HARD CODED, NOT THE SAME AS "df_path"
-    data = pd.read_csv('../data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv')
-
-    #One hot encoding the data 
-    encoded_df = data
-    for i in ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']:
-        encoded_df = pd.get_dummies(encoded_df, columns = [i], prefix = [i], drop_first=True)
-
-    #dropping label
-    X = encoded_df.drop(['bmi'], axis= 1) 
-
-    #Dropping various other Features (Feature selection), as well as Stroke Feature (Which we want to estimate later)
-    X = X.drop(['Residence_type_Urban', 'gender_Male', 'work_type_Private', 'work_type_Self-employed', 'stroke', 'id'], axis = 1) 
-
-    #Selecting data to truncate
-    X = X.loc[data['bmi'].isna()]
-
-    #Training model
-    bmi_train(data)
-
-    #Scaling data to truncate (Using same Scaler as in training model)
-    X_scaled = X
-    X_scaled[num_cols] = scaler.transform(X[num_cols])
-
-    #Applying model on data to estimate
-    y = LR.predict(X_scaled)
-
-    # Saving data in the panda table and saving it as csv:
-    truncation = data.loc[data['bmi'].isna()]
-    truncation['bmi'] = y
-    data.loc[data['bmi'].isna()] = truncation
-
-    
-    data.to_csv('../data/Truncated_data/Stroke_data.csv')
-    print()
-    print('Truncated data saved to: ../data/Truncated_data/Stroke_data.csv')
-    print()
-
-
-    #Manual test to check if the saving into truncation effectively worked
-    """
-    columns = data.columns
-    for i in columns:
-        print(i, ": ", data[i].isna().sum() ,"missing data" )
-    
-    print()
-    print(data.loc[data['bmi'].isna()]) #Checking if there are no empty values
-
-    test = X_scaled.iloc[1:10]
-    print(test[['hypertension', 'heart_disease']])
-    print(truncation.iloc[1:10])
-    """
 
 """Test for normality"""    
 def Kolmogorov_Smirnov(df):
@@ -193,55 +123,50 @@ def KNN(X_train_scaled,X_test_scaled,y_train,y_test):
     """
     
 
-print('hello World')
+def smoking_model ():
 
-def smoking_model (X_train_scaled):
+    ### Step 1 - Importing and encoding ###
 
-    ###                                             ###
-    ### Step 1: Reverse the one hot encoding :'(    ###
-    ###                                             ###
+    #Importing data
+    data = pd.read_csv('./data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv')
+    #dropping gender other because only one observation
+    data = data[data['gender'] != 'Other']
 
-    #Using scaled and encoded data
-    df = X_train_scaled
-    #Creating df with only smoking data
-    smoker_information = df[['smoking_status_never smoked', 'smoking_status_smokes', 'smoking_status_formerly smoked']]
-    #Selecting column names of the one hot encoding and saving them in new column
-    smoker_information['smoking_status'] = smoker_information.idxmax(axis = 1)
-    sm_col = smoker_information['smoking_status']
 
-    #Editing the names
-    for i in sm_col.index:
-        if sm_col[i] == 'smoking_status_never smoked':
-            #because we used drop first in the one hot encoding, the "unknown" values are dropped. 
-            #Using the idx function with 3 False values the first one is stored as max
-            #We use this function to check if in reality the value saved as "neversmoked" are not just "unknown"
-            if smoker_information['smoking_status_never smoked'][i] == False:
-                sm_col[i] = 'unknown'
-            else:
-                sm_col[i] = 'never smoked'
-        elif sm_col[i] == 'smoking_status_formerly smoked':
-            sm_col[i] = 'formerly smoked'
-        elif sm_col[i] == 'smoking_status_smokes':
-            sm_col[i] = 'smokes'
-    df['smoking_status'] = sm_col
-    df.drop(['smoking_status_never smoked', 'smoking_status_smokes', 'smoking_status_formerly smoked'], axis = 1)
-    
-    df = df.loc[df['smoking_status'] != 'unknown']
+    df = data.iloc[train_id]
+    df = df.drop(['stroke', 'bmi'], axis = 1)
+    df = df.loc[data['smoking_status'] != 'Unknown'] 
 
-    X = df.drop(['smoking_status'], axis = 1)
-    y = df[['smoking_status']]
+    X = df.drop(['smoking_status'], axis= 1)
+    y = df['smoking_status']
 
-    #step 2: train test splits
+    cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type']
+    encoded_X = pd.get_dummies(X, columns = cat_cols, prefix = cat_cols, drop_first = True )
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56)
+    ### step 2 - train test splits and scaling ###
 
-    #step 3 : model and hyperparameter tuning
+    #Splits
+    X_train, X_test, y_train, y_test = train_test_split(encoded_X, y, test_size=0.2, random_state=56, stratify=y)
 
+    #Using robust because data not normally distributed
+    scaler = RobustScaler() 
+    num_cols = ['age', 'avg_glucose_level']
+    X_train_scaled, X_test_scaled = X_train, X_test
+    X_train_scaled[num_cols] = scaler.fit_transform(X_train[num_cols]) 
+    X_test_scaled[num_cols] = scaler.transform(X_test[num_cols])
+
+    ### step 3 - model training and hyperparameter tuning ###
+
+    #initiating classifier and fitting it
     clf = KNeighborsClassifier(n_neighbors = 8, metric = 'euclidean')
-    clf.fit(X_train, y_train)
+    clf.fit(X_train_scaled, y_train)
 
-    y_pred = clf.predict(X_test)
+    #creating prediction with our model vs simple classifying model.
+    y_pred = clf.predict(X_test_scaled)
     y_simp = ['never smoked' for i in range(len(y_pred))]
+
+    ### Step 4 - performance metrics ###
+
     print(" ### Smoking model performance ###")
     print("Precision:", precision_score(y_test, y_pred, average='macro'))
     print("Recall:", recall_score(y_test, y_pred, average='macro'))
@@ -252,10 +177,92 @@ def smoking_model (X_train_scaled):
     print("Recall:", recall_score(y_test, y_simp, average='macro'))
     print("F1 score", f1_score(y_test, y_simp, average='macro'))
 
+    ### Step 5 - Saving the data in truncated data set ###
 
-    print(sm_col.value_counts())
+    #Selecting rows where truncation is needed
+    truncation = data.loc[data['smoking_status'] == 'Unknown']
+    #creating features (X)
+    trunc_X = truncation.drop(['smoking_status', 'bmi', 'stroke'], axis = 1)
+    #Encoding features (X)
+    encoded_trunc_X = pd.get_dummies(trunc_X, columns = cat_cols, prefix = cat_cols, drop_first = True )
+    #scaling features with our scaler (X)
+    trunc_X_scaled = encoded_trunc_X
+    trunc_X_scaled[num_cols] = scaler.transform(encoded_trunc_X[num_cols])
 
-    # Step 4 Saving the data in truncated data set.
+    # predicting outcome y
+    y = clf.predict(trunc_X_scaled)
+
+    #saving it in truncation data
+    truncation['smoking_status'] = y
+    
+    #saving truncation data in original data frame
+    data.loc[data['smoking_status'] == 'Unknown'] = truncation
+
+    #saving it as csv
+    data.to_csv('./data/Truncated_data/Stroke_data_smoking.csv')
+    print()
+    print('Truncated data saved to: ../data/Truncated_data/Stroke_data_smoking.csv')
+    print()
+
+
+def new_bmi_model():
+
+    data = pd.read_csv('./data/Truncated_data/Stroke_data_smoking.csv')
+    df = data.drop(['Unnamed: 0', 'id', 'smoking_status', 'stroke'], axis=1)
+    
+    cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type']
+    encoded_df = pd.get_dummies(df, columns = cat_cols, prefix = cat_cols, drop_first = True )
+    
+    learning_Set = encoded_df.iloc[train_id]
+    learning_Set = learning_Set.loc[df['bmi'].notna()]
+    X = learning_Set.drop('bmi', axis = 1)
+    y = learning_Set['bmi']
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56)
+
+    scaler = RobustScaler() 
+    num_cols = ['age', 'avg_glucose_level']
+    X_train_scaled, X_test_scaled = X_train, X_test
+    X_train_scaled[num_cols] = scaler.fit_transform(X_train[num_cols]) 
+    X_test_scaled[num_cols] = scaler.transform(X_test[num_cols])
+
+    LR = LinearRegression()
+    LR.fit(X_train_scaled, y_train)
+    
+    #Creating a Model which calculates the mean for every estimated value as comparaison
+    y_mean = [mean(y)] * len(y_test)
+
+    #Evaluating performance
+    bmi_scores(LR, X_train, y_train, X_test, y_test, y_mean)
+
+
+    ### Saving Data in file 
+
+    X = encoded_df.loc[data['bmi'].isna()]
+    X = X.drop('bmi', axis = 1)
+
+    #Scaling data to truncate (Using same Scaler as in training model)
+    X_scaled = X
+    X_scaled[num_cols] = scaler.transform(X[num_cols])
+
+
+    #Applying model on data to estimate
+    y = LR.predict(X_scaled) 
+
+    # Saving data in the panda table and saving it as csv:
+    # We can do that with the One-hot encoded data because it does not affect the  lentgh of rows or indexes.
+    truncation = data.loc[data['bmi'].isna()]
+    truncation['bmi'] = y
+
+    #putting truncation in original dataset    
+    data.loc[data['bmi'].isna()] = truncation
+    
+    #saving it as csv
+    data.to_csv('./data/Truncated_data/Stroke_data.csv')
+    print()
+    print('Truncated data saved to: ../data/Truncated_data/Stroke_data.csv')
+    print()
+
 
 
 """Test for normality"""    
@@ -432,7 +439,7 @@ def random_forest(X, y, n_splits):
     print(df_performance.groupby(by = 'clf').std())
 
 
-def support_v_m(X_train_scaled, y_train, y_test):
+def support_v_m(X_train_scaled, X_test_scaled, y_train, y_test):
 
     clf = svm.SVC(kernel = 'linear', C=5)
     clf.fit(X_train_scaled, y_train)
@@ -456,6 +463,8 @@ def support_v_m(X_train_scaled, y_train, y_test):
     plt.xlabel('False Positive Rate')
     plt.title("Support Vector - ROC curve")
     plt.show()  
+
+
 
 
 """ Correlation estimation code """
@@ -498,11 +507,6 @@ def estimate_correlation(data):
             print("            No significant correlation")
         print()
 
-"""Load data and preprocessing"""
-
-### Load the data ### 
-df_path = "../Data/Truncated_data/Stroke_data.csv"
-data = pd.read_csv(df_path)
 
 ### Data Exploration ###
 def data_exploration():
@@ -634,21 +638,37 @@ def data_exploration():
 
 
 ### Test/train splits and data encoding ###
-def split_and_encode(data):
+
+def encode_and_split(data):
+    
     cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status'] # TODO add 2 further categorical data!
     encoded_df = data
     encoded_df = pd.get_dummies(encoded_df, columns = cat_columns, prefix = cat_columns, drop_first = True)
-    
-    X = encoded_df.drop("stroke", axis = 1)
-    y = encoded_df["stroke"]
 
-    return X, y
+    encoded_df.drop(['Unnamed: 0.1', 'Unnamed: 0', 'id'], axis=1)
 
-def do_train_test_split(X, y):
-    # Defaul of train test_split is not stratified, need for specification
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56, stratify = y)
+    #seperating train and test set with original ids
+    train_set = encoded_df.iloc[train_id]
+    #Concat is necessary because iloc somehow does not work. I do not know why, but result is the same though so it's fine.
+    test_set = pd.concat([encoded_df, train_set]).drop_duplicates(keep = False)
+
+
+    X_train = train_set.drop("stroke", axis = 1)
+    y_train = train_set['stroke']
+    X_test  = test_set.drop('stroke', axis=1)
+    y_test  = test_set['stroke']
+
+   
+    #code to show that concat works
+    '''
+    print(train_set.shape)
+    print(test_set.shape)
+    print(len(train_id))
+    print(len(test_id))
+    '''
 
     return X_train, X_test, y_train, y_test
+
 
 ### Scaling the data using Robust Scaler ###
 def scale_data(X_train, X_test):
@@ -662,15 +682,23 @@ def scale_data(X_train, X_test):
 
 ### Calling split, encode and scaling functions ###
 
-X, y = split_and_encode(data)
+### Load the data ### 
 
-X_train, X_test, y_train, y_test = do_train_test_split(X, y)
+#getting test/train ids
+get_ids()
+#Data truncation
+smoking_model()
+new_bmi_model()
 
+#Loading data
+df_path = "./Data/Truncated_data/Stroke_data.csv"
+data = pd.read_csv(df_path)
+
+#Encoding and spliting
+X_train, X_test, y_train, y_test = encode_and_split(data)
+
+#Scaling data
 X_train_scaled, X_test_scaled = scale_data(X_train, X_test)
-   
 
+support_v_m(X_train_scaled, X_test_scaled, y_train, y_test)
 
-# estimate_correlation(data)
-random_forest(X, y, 5)
-
-smoking_model(X_train_scaled)
