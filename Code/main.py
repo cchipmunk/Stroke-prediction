@@ -489,7 +489,7 @@ def random_forest(X, y, n_splits):
 
 
         # Standardize the numerical features using training set statistics
-        sc = StandardScaler()
+        sc = RobustScaler() #because not normal distrbuted
         X_train_sc = sc.fit_transform(X_train)
         X_test_sc  = sc.transform(X_test)
 
@@ -791,10 +791,10 @@ data_exploration(data)
 support_v_m(X_train_scaled, X_test_scaled, y_train, y_test)
 estimate_correlation(data)
 
-
+"""
 KNN(X_train_scaled, X_test_scaled, y_train, y_test)
-
-
+"""
+"""
 random_forest(X, y, 5)
 logistic_regression(X,y,5)
-
+"""
