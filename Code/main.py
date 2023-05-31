@@ -32,7 +32,7 @@ def get_ids():
     #To prevent all data leakage, we want our truncation models to only be trained and tested within the Training data of our final model.
     global og_data
 
-    og_data = pd.read_csv("./Data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv")
+    og_data = pd.read_csv("../Data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv")
     #dropping value because lonely
     og_data = og_data[og_data['gender'] != 'Other']
 
@@ -47,9 +47,8 @@ def get_ids():
     train_id = X_train.index
     test_id = X_test.index
 
-    print(train_id)
-    print(test_id)
     print('Train test split ids have been generated')
+    print()
 
 
 def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
@@ -124,7 +123,7 @@ def smoking_model ():
     ### Step 1 - Importing and encoding ###
 
     #Importing data
-    data = pd.read_csv('./data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv')
+    data = pd.read_csv('../data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv')
     #dropping gender other because only one observation
     data = data[data['gender'] != 'Other']
 
@@ -195,7 +194,7 @@ def smoking_model ():
     data.loc[data['smoking_status'] == 'Unknown'] = truncation
 
     #saving it as csv
-    data.to_csv('./data/Truncated_data/Stroke_data_smoking.csv')
+    data.to_csv('../data/Truncated_data/Stroke_data_smoking.csv')
     print()
     print('Truncated data saved to: ../data/Truncated_data/Stroke_data_smoking.csv')
     print()
@@ -203,7 +202,7 @@ def smoking_model ():
 
 def new_bmi_model():
 
-    data = pd.read_csv('./data/Truncated_data/Stroke_data_smoking.csv')
+    data = pd.read_csv('../data/Truncated_data/Stroke_data_smoking.csv')
     df = data.drop(['Unnamed: 0', 'id', 'smoking_status', 'stroke'], axis=1)
     
     cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type']
@@ -254,7 +253,7 @@ def new_bmi_model():
     data.loc[data['bmi'].isna()] = truncation
     
     #saving it as csv
-    data.to_csv('./data/Truncated_data/Stroke_data.csv')
+    data.to_csv('../data/Truncated_data/Stroke_data.csv')
     print()
     print('Truncated data saved to: ../data/Truncated_data/Stroke_data.csv')
     print()
@@ -532,12 +531,6 @@ def support_v_m(X_train_scaled, X_test_scaled, y_train, y_test):
 
     y_pred = (clf.predict(X_test_scaled))
 
-    print(clf.score(X_test_scaled, y_test))
-
-    print(len(y_pred))
-    print(len(y_test))
-
-
     print("Precision:", precision_score(y_test, y_pred))
     print("Recall:", recall_score(y_test, y_pred))
     print("F1 score", f1_score(y_test, y_pred))
@@ -783,7 +776,7 @@ smoking_model()
 new_bmi_model()
 
 #Loading data
-df_path = "./Data/Truncated_data/Stroke_data.csv"
+df_path = "../Data/Truncated_data/Stroke_data.csv"
 data = pd.read_csv(df_path)
 
 #Encoding and spliting
@@ -796,9 +789,12 @@ data_exploration(data)
 
 
 support_v_m(X_train_scaled, X_test_scaled, y_train, y_test)
+estimate_correlation(data)
 
-
-# estimate_correlation(data)
+"""
+KNN(X_train_scaled, X_test_scaled, y_train, y_test)
+"""
+"""
 random_forest(X, y, 5)
 logistic_regression(X,y,5)
-smoking_model(X_train_scaled)
+"""
