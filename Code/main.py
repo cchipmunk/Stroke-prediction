@@ -788,7 +788,7 @@ support_v_m(X_train_scaled, X_test_scaled, y_train, y_test)
 estimate_correlation(data) # Data right? not encoded_df needed?
 
 
-# KNN(X_train_scaled, X_test_scaled, y_train, y_test)
+KNN(X_train_scaled, X_test_scaled, y_train, y_test)
 
 random_forest(X, y, 5)
 logistic_regression(X,y,5)
