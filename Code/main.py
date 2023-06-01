@@ -213,7 +213,7 @@ def new_bmi_model():
     X = learning_Set.drop('bmi', axis = 1)
     y = learning_Set['bmi']
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56) # TODO do we need stratify as well?
 
     scaler = RobustScaler() 
     num_cols = ['age', 'avg_glucose_level']
@@ -722,7 +722,7 @@ def encode_and_split(data):
 
 def do_train_test_split(encoded_df):
     #seperating train and test set with original ids
-    train_set = encoded_df.iloc[train_id]
+    train_set = encoded_df.iloc[train_id]  
     #Concat is necessary because iloc somehow does not work. I do not know why, but result is the same though so it's fine.
     test_set = pd.concat([encoded_df, train_set]).drop_duplicates(keep = False)
 
@@ -750,7 +750,7 @@ def scale_data(X_train, X_test):
     num_cols = ['age', 'avg_glucose_level', 'bmi']
     X_train_scaled, X_test_scaled = X_train, X_test
     X_train_scaled[num_cols] = scaler.fit_transform(X_train[num_cols]) 
-    X_test_scaled[num_cols] = scaler.transform(X_test[num_cols]) #fit anstatt transform right?
+    X_test_scaled[num_cols] = scaler.transform(X_test[num_cols])
 
     return X_train_scaled, X_test_scaled
 
