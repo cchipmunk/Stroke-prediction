@@ -348,8 +348,8 @@ def logistic_regression(X,y,n_splits):
 
     # Visualize the normalized feature importance across the n folds and add error bar to indicate the std
     fig, ax = plt.subplots()
-    ax.bar(np.arange(15), df_LR_normcoef['importance_abs_mean'][:15], yerr=df_LR_normcoef['importance_std'][:15])
-    ax.set_xticks(np.arange(15), df_LR_normcoef.index.tolist()[:15], rotation=90)
+    ax.bar(np.arange(14), df_LR_normcoef['importance_abs_mean'][:15], yerr=df_LR_normcoef['importance_std'][:15])
+    ax.set_xticks(np.arange(14), df_LR_normcoef.index.tolist()[:15], rotation=90)
     ax.set_title("Normalized feature importance for LR across 5 folds", fontsize=16)
     plt.xlabel('Feature', fontsize=8)
     plt.ylabel("Normalized feature importance", fontsize=8)
