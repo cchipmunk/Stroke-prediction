@@ -334,6 +334,7 @@ def logistic_regression(X,y,n_splits):
     axs.legend()
     axs.title.set_text("LR")
     plt.tight_layout()
+    plt.show()
     # plt.savefig('../output/roc_curves.png')
 
     # Summarize the folds
@@ -354,6 +355,7 @@ def logistic_regression(X,y,n_splits):
     plt.xlabel('Feature', fontsize=8)
     plt.ylabel("Normalized feature importance", fontsize=8)
     plt.tight_layout()
+    plt.show()
     # plt.savefig('../output/feature_importance.png')
 
     # Get the two most important features and the relevant sign:
@@ -500,7 +502,6 @@ def random_forest(X, y, n_splits):
         space['max_features'] = [1,5,10]
         space['max_samples'] = [20,500,2000,3000]
 
-        
         # Get best hyperparameters with Random Search
         # define search 
         search = RandomizedSearchCV(tcl1, space, n_iter=10, scoring='roc_auc', n_jobs=-1)
@@ -523,11 +524,11 @@ def random_forest(X, y, n_splits):
 
         tcl.fit(X_train_rs,y_train)
 
-        y_pred = tcl.predict(X_test)
+        y_pred = tcl.predict(X_test_rs)
 
         
-        print('Accuracy of Random Forest classifier on train set: {:.2f}'.format(tcl.score(X_train, y_train)))
-        print('Accuracy of Random Forest classifier on test set: {:.2f}'.format(tcl.score(X_test, y_test)))
+        print('Accuracy of Random Forest classifier on train set: {:.2f}'.format(tcl.score(X_train_rs, y_train)))
+        print('Accuracy of Random Forest classifier on test set: {:.2f}'.format(tcl.score(X_test_rs, y_test)))
         print('Recall of Random Forest classifier on test set: {:.2f}'.format(recall_score(y_test, y_pred)))
         print('Precision of Random Forest classifier on test set: {:.2f}'.format(precision_score(y_test, y_pred)))
         print('ROC/AUC of Random Forest classifier on test set: {:.2f}'.format(roc_auc_score(y_test, tcl.predict_proba(X_test)[:,1])))
