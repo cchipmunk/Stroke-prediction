@@ -490,20 +490,20 @@ def random_forest(X, y, n_splits):
         X_train_rs = rs.fit_transform(X_train)
         X_test_rs  = rs.transform(X_test)
 
-        """
+        
         # Random forest
         tcl1 = RandomForestClassifier(random_state = 50, class_weight = "balanced")
         space = dict() 
-        space['max_depth'] = [5,10,15]
-        space['min_samples_split'] = [50,100, 1000,5000]
-        space['min_samples_leaf'] = [1000,10000,25000,50000,75000]
-        space['max_features'] = [10,20,30]
+        space['max_depth'] = [1,5,10]
+        space['min_samples_split'] = [5,10,100,500]
+        space['min_samples_leaf'] = [10,50,250,500,750]
+        space['max_features'] = [1,5,10]
         space['max_samples'] = [20,500,2000,3000]
 
         
         # Get best hyperparameters with Random Search
         # define search 
-        search = RandomizedSearchCV(tcl1, space, n_iter=30, scoring='roc_auc', n_jobs=-1)
+        search = RandomizedSearchCV(tcl1, space, n_iter=10, scoring='roc_auc', n_jobs=-1)
 
         # execute search 
         tunned_tree = search.fit(X_train_rs, y_train) 
@@ -518,20 +518,20 @@ def random_forest(X, y, n_splits):
         tcl = RandomForestClassifier(min_samples_split= tunned_tree.best_params_["min_samples_split"], min_samples_leaf=tunned_tree.best_params_["min_samples_leaf"], 
                              max_depth=tunned_tree.best_params_["max_depth"], max_features = tunned_tree.best_params_["max_features"], max_samples = tunned_tree.best_params_["max_samples"], random_state=50, class_weight='balanced') 
 
-        """
+        
         tcl = RandomForestClassifier(random_state = 50, class_weight= "balanced")
 
         tcl.fit(X_train_rs,y_train)
 
         y_pred = tcl.predict(X_test)
 
-        """
+        
         print('Accuracy of Random Forest classifier on train set: {:.2f}'.format(tcl.score(X_train, y_train)))
         print('Accuracy of Random Forest classifier on test set: {:.2f}'.format(tcl.score(X_test, y_test)))
         print('Recall of Random Forest classifier on test set: {:.2f}'.format(recall_score(y_test, y_pred)))
         print('Precision of Random Forest classifier on test set: {:.2f}'.format(precision_score(y_test, y_pred)))
         print('ROC/AUC of Random Forest classifier on test set: {:.2f}'.format(roc_auc_score(y_test, tcl.predict_proba(X_test)[:,1])))
-        """
+        
 
         # Evaluate classifiers using evaluation metrics
         eval_metrics_RF = evaluation_metrics(tcl, y_test, X_test_rs, axs, legend_entry=str(fold)) 
