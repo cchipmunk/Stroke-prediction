@@ -341,19 +341,18 @@ def logistic_regression(X,y,n_splits):
     print(df_performance.groupby(by = 'clf').mean())
     print(df_performance.groupby(by = 'clf').std())
 
-    # Get the top features - evaluate the coefficients across the n folds
-    df_LR_normcoef['importance_mean'] = df_LR_normcoef.mean(axis =1)
-    df_LR_normcoef['importance_std']  = df_LR_normcoef.std(axis =1)
-    df_LR_normcoef['importance_abs_mean'] = df_LR_normcoef.abs().mean(axis =1)
-    df_LR_normcoef.sort_values('importance_abs_mean', inplace = True, ascending=False)
+    # Average the feature importance across the n folds and sort them
+    df_LR_normcoef['mean_coef'] = df_LR_normcoef.mean(axis=1)
+    df_LR_normcoef_sorted = df_LR_normcoef.sort_values('mean_coef', ascending=False)
 
     # Visualize the normalized feature importance across the n folds and add error bar to indicate the std
-    fig, ax = plt.subplots()
-    ax.bar(np.arange(14), df_LR_normcoef['importance_abs_mean'][:15], yerr=df_LR_normcoef['importance_std'][:15])
-    ax.set_xticks(np.arange(14), df_LR_normcoef.index.tolist()[:15], rotation=90)
-    ax.set_title("Normalized feature importance for LR across 5 folds", fontsize=16)
-    plt.xlabel('Feature', fontsize=8)
-    plt.ylabel("Normalized feature importance", fontsize=8)
+    top_features_15 = df_LR_normcoef_sorted[:15]
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(top_features_15.index.tolist(), top_features_15['mean_coef'].values, yerr=top_features_15.std(axis=1).tolist(), capsize=4)
+    ax.set_xlabel('Features')
+    ax.set_ylabel('Coefficient Value (normalized)')
+    ax.set_title('Feature importance for LR across 5 folds')
+    ax.tick_params(axis='x', rotation=90)
     plt.tight_layout()
     plt.show()
     # plt.savefig('../output/feature_importance.png')
