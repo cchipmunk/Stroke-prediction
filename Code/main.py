@@ -6,7 +6,7 @@ from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.spatial.distance import euclidean, cityblock, minkowski
 from sklearn import cluster, datasets, mixture, svm
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV
 from sklearn.preprocessing import RobustScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_curve, confusion_matrix, auc, roc_auc_score
@@ -22,29 +22,32 @@ from statistics import mean
 import warnings
 import time
 
-
 warnings.filterwarnings("ignore")
 
-""" All Models """
-""" BMI estimation code """
 def get_ids():
     #gets train test split ids.
-    #This is necessary because we at first truncate the data and then estimate our stroke prediction model.
-    #To prevent all data leakage, we want our truncation models to only be trained and tested within the Training data of our final model.
+    # Originally, the idea was to have this one split to prevent all data leakage and only work on the training set.
+    # We did not coordinate enough for it to be used, but it's still necessary for the data truncation.
+      
+    
     global og_data
 
     og_data = pd.read_csv("../Data/ORIGINAL_DATA/stroke_dataset/healthcare-dataset-stroke-data.csv")
-    #dropping value because lonely
+
+    #dropping value because only 1 observation with that value
     og_data = og_data[og_data['gender'] != 'Other']
 
+    #Preparing feature and label
     X = og_data.drop('stroke', axis = 1)
     y = og_data['stroke']
 
+    #Performing startified splits
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56, stratify = y)
 
     global train_id
     global test_id
 
+    #Saving ids in global variables for later localisation
     train_id = X_train.index
     test_id = X_test.index
 
@@ -53,7 +56,7 @@ def get_ids():
 
 
 def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
-    ### Only use for BMI estimation scores ###
+    ### Function to print out metrics of bmi truncation model ###
 
     y_pred_test = model.predict(X_test)
     y_pred_train = model.predict(X_train)
@@ -72,9 +75,8 @@ def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
     print('Score using means (no model): R2 score: {:.3f}, RMSE: {:.3f}'.format(r2_mean, rmse_mean))
 
 
-"""Test for normality"""    
 def Kolmogorov_Smirnov(df):
-    # Kolgorov_Smirnov test for normality with transformations
+    ### Kolgorov_Smirnov test for normality on all continuous variable (with and without transformations) ###
     for i in ['age', 'avg_glucose_level', 'bmi']:
         print(f"{i} - Kolgorov Smirnov test for normality:")
         res = stats.kstest(df[i], stats.norm.cdf)
@@ -86,7 +88,6 @@ def Kolmogorov_Smirnov(df):
         print()
 
 
-"""K-Nearest Neighbour (KNN) Model"""
 def KNN(X_train_scaled,X_test_scaled,y_train,y_test): 
    
     # K tuning
@@ -128,20 +129,22 @@ def smoking_model ():
     #dropping gender other because only one observation
     data = data[data['gender'] != 'Other']
 
-
+    # Using Ids located with get_ids function
     df = data.iloc[train_id]
     df = df.drop(['stroke', 'bmi'], axis = 1)
     df = df.loc[data['smoking_status'] != 'Unknown'] 
 
+    #Creating features and labels data frames
     X = df.drop(['smoking_status'], axis= 1)
     y = df['smoking_status']
 
+    #encoding categorical columns
     cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type']
     encoded_X = pd.get_dummies(X, columns = cat_cols, prefix = cat_cols, drop_first = True )
 
     ### step 2 - train test splits and scaling ###
 
-    #Splits
+    #Spliting the already split data, not necessary, we lose a bit of accuracy, but at this point there's not enough time to change it
     X_train, X_test, y_train, y_test = train_test_split(encoded_X, y, test_size=0.2, random_state=56, stratify=y)
 
     #Using robust because data not normally distributed
@@ -153,7 +156,7 @@ def smoking_model ():
 
     ### step 3 - model training and hyperparameter tuning ###
 
-    #initiating classifier and fitting it
+    #initiating classifier and fitting it, no specific reason for using knn, except ease of implementation
     clf = KNeighborsClassifier(n_neighbors = 8, metric = 'euclidean')
     clf.fit(X_train_scaled, y_train)
 
@@ -202,26 +205,35 @@ def smoking_model ():
 
 
 def new_bmi_model():
+    ### Bmi Truncation model ###
 
+
+    # importing the already truncated data with smoking status
     data = pd.read_csv('../data/Truncated_data/Stroke_data_smoking.csv')
     df = data.drop(['Unnamed: 0', 'id', 'smoking_status', 'stroke'], axis=1)
     
+    #Encoding the categorical columns
     cat_cols = ['gender', 'ever_married', 'work_type', 'Residence_type']
     encoded_df = pd.get_dummies(df, columns = cat_cols, prefix = cat_cols, drop_first = True )
     
+
+    #using our ids generated with the first function to make our train / test splits
     learning_Set = encoded_df.iloc[train_id]
     learning_Set = learning_Set.loc[df['bmi'].notna()]
     X = learning_Set.drop('bmi', axis = 1)
     y = learning_Set['bmi']
 
+    # Splitting our data a second time for no reason (we lose a bit of accuracy, but at this point there's not enough time to change it)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56) # TODO do we need stratify as well?
 
+    #Scaling the data with a robust scaler (because our data is not normally distributed)
     scaler = RobustScaler() 
     num_cols = ['age', 'avg_glucose_level']
     X_train_scaled, X_test_scaled = X_train, X_test
     X_train_scaled[num_cols] = scaler.fit_transform(X_train[num_cols]) 
     X_test_scaled[num_cols] = scaler.transform(X_test[num_cols])
 
+    #fitting linear regresstion (model choice: easy to implement)
     LR = LinearRegression()
     LR.fit(X_train_scaled, y_train)
     
@@ -261,7 +273,6 @@ def new_bmi_model():
 
 
 
-"""Test for normality"""    
 def Kolmogorov_Smirnov(df):
     # Kolgorov_Smirnov test for normality with transformations
     for i in ['age', 'avg_glucose_level', 'bmi']:
@@ -274,7 +285,6 @@ def Kolmogorov_Smirnov(df):
         print(f"probability that {i} is normaly distributed with log transformation = {1 - res.statistic}")
         print()
 
-"""Logstic Regression"""
 def logistic_regression(X,y,n_splits):
     # 0.1) Calculate multicollinearity variance inflation factor (VIF)
     # to ensure that indepentend variables do not correlate with each other?
@@ -368,7 +378,6 @@ def logistic_regression(X,y,n_splits):
     # df_mean_std_performance.to_csv('../output/LR_mean_std_performance.csv', index=False)
 
 
-"""K-Nearest Neighbour (KNN) Model"""
 def KNN(X_train_scaled,X_test_scaled,y_train,y_test): 
    
     # K tuning
@@ -396,9 +405,8 @@ def KNN(X_train_scaled,X_test_scaled,y_train,y_test):
     print("F1 Score of KNN:", f1)
     
     
-"""Random Forest"""
-# Plot the diagonal line 
 def add_identity(axes, *line_args, **line_kwargs):
+    # Plot the diagonal line 
     identity, = axes.plot([], [], *line_args, **line_kwargs)
     def callback(axes):
         low_x, high_x = axes.get_xlim()
@@ -558,29 +566,133 @@ def random_forest(X, y, n_splits):
     print(df_performance.groupby(by = 'clf').std())
 
 
-def support_v_m(X_train_scaled, X_test_scaled, y_train, y_test):
+def svm_hyp_search(X_train,y_train):
+    #Using randomised gridsearch for hyperparameter tuning
 
-    clf = svm.SVC(kernel = 'linear', C=5)
-    clf.fit(X_train_scaled, y_train)
+        #for rbf kernel
+        grid_param = {'C': [0, 0.01, 0.1, 1, 10], 
+                      'gamma': [10, 5, 2, 1, 0.1, 0.01, 0.001],
+                      'kernel': ['rbf'],
+                      'class_weight' : ['balanced']}
+        
+        #for linear kernel
+        grid_param_02 = {'C': [0, 0.01, 0.1, 1, 10], 
+                      'gamma': [10, 5, 2, 1, 0.1, 0.01, 0.001],
+                      'kernel': ['linear'],
+                      'class_weight' : ['balanced']}
+        
+        #for sigmoid kernel
+        grid_param_03 = {'C': [0, 0.01, 0.1, 1, 5,10], 
+                      'gamma': [2, 1, 0.1, 0.01],
+                      'coef0': [-20, -10, -5, 5, 10, 20],
+                      'kernel': ['sigmoid'],
+                      'class_weight' : ['balanced']}
 
-    y_pred = (clf.predict(X_test_scaled))
+        grid = RandomizedSearchCV(svm.SVC(), grid_param_03, refit = True, verbose = 3)
 
-    print("Precision:", precision_score(y_test, y_pred))
-    print("Recall:", recall_score(y_test, y_pred))
-    print("F1 score", f1_score(y_test, y_pred))
+        grid.fit(X_train, y_train)
+
+
+        print("griddy grid grid searchy search")
+        print()
+        print(grid.best_params_)
+
+        print(grid.best_estimator_)
+
+
+def support_v_m(X, y, n_splits):
+    """ 
+    ### Support Vector function ###
+
+    X = Features
+
+    y = labels
+
+    n_splits = number of splits for CV
     
-    fpr,tpr, _ = roc_curve(y_test, y_pred)
+    """
+    
+    # Prepare Split indexes
+    skf = StratifiedKFold(n_splits = n_splits, shuffle = True, random_state = 50)
 
-    plt.plot(fpr,tpr)
-    plt.ylabel('True Positive Rate')
-    plt.xlabel('False Positive Rate')
-    plt.title("Support Vector - ROC curve")
-    plt.show()  
+    # Prepare the performance overview data frame
+    precision = []
+    recall = []
+    accuracy = []
+    F1 = []
+
+    fold = 1
+
+    # Loop over all splits
+    for train_index, test_index in skf.split(X, y):
+        # Get the relevant subsets for training and testing
+        X_test  = X.iloc[test_index]
+        y_test  = y.iloc[test_index]
+        X_train = X.iloc[train_index]
+        y_train = y.iloc[train_index]
+
+
+        # Standardize the numerical features using training set statistics
+        rs = RobustScaler() #because not normal distrbuted
+        X_train_rs = rs.fit_transform(X_train)
+        X_test_rs  = rs.transform(X_test)
+
+        
+        # Initiating classifier with hyperparameters found using randomised grid search (see svm_hyp_search() function)
+        svm_clf = svm.SVC(kernel='sigmoid', C=5, coef0= 0, class_weight = 'balanced', random_state=40)
+
+        # Fit the function and save performance metrics
+        svm_clf.fit(X_train_rs, y_train)
+
+        y_pred = svm_clf.predict(X_test_rs)
+
+        
+        print(f"### Fold number: {fold} ###")
+        print()
+        print('Accuracy of SVM on train set: {:.2f}'.format(svm_clf.score(X_train_rs, y_train)))
+        print('')
+        print('Accuracy of SVM on test set: {:.2f}'.format(svm_clf.score(X_test_rs, y_test)))
+        accuracy.append(svm_clf.score(X_test_rs, y_test))
+        print('Recall of SVM on test set: {:.2f}'.format(recall_score(y_test, y_pred)))
+        recall.append(round(recall_score(y_test, y_pred), 3))
+        print('Precision of SVM on test set: {:.2f}'.format(precision_score(y_test, y_pred)))
+        precision.append(round(precision_score(y_test, y_pred),3))
+        print(f'F1 score of SVM: {f1_score(y_test, y_pred)}')
+        F1.append(round(f1_score(y_test, y_pred), 3))
+
+        print("area under curve (auc): ", roc_auc_score(y_test, y_pred))
+
+        fold += 1
+        print()
+        print()
+
+
+    # Printing mean values from the cross validation
+    print(f'Preicsion across folds: {precision}, mean = {mean(precision)}')
+    print(f'Recall across folds, {recall}, mean = {mean(recall)}')
+    print(f'F1 across folds: {F1}, mean = {mean(F1)}')
+    print()
+    print()
+
+    test_fpr, test_tpr, te_thresholds = roc_curve(y_test, y_pred)
+
+
+    # Only 3 points because ROC curve uses probability estimates and SVM does not create these estimate
+    
+    plt.grid()
+    plt.plot(test_fpr, test_tpr)
+    plt.plot([0,1],[0,1],'g--')
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC curve for SVM")
+    plt.grid(color='black', linestyle='-', linewidth=0.5)
+    plt.show()
+
+    #Clearing figure for future graphs
+    plt.clf
 
 
 
-
-""" Correlation estimation code """
 # show correlation --> needed?
 def correlation_plot():
     corr_plot= sns.pairplot(data=data, x_vars=vars, y_vars=vars)
@@ -588,6 +700,7 @@ def correlation_plot():
     plt.show()
 
 def estimate_correlation(data):
+    ### Simple function to estimate correlation between Features and label ###
     num_cols = ['age', 'avg_glucose_level', 'bmi']
 
     for i in num_cols:
@@ -621,8 +734,9 @@ def estimate_correlation(data):
         print()
 
 
-### Data Exploration ###
 def data_exploration(data):
+    ### Data Exploration ###
+
     # Look at data
     # Look at Head
     print(data.head())
@@ -746,10 +860,10 @@ def data_exploration(data):
     plt.show()
 
 
-### Test/train splits and data encoding ###
 
-def encode_and_split(data):
-    
+def encode(data):
+    ### Test/train splits and data encoding ###
+
     cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']
     encoded_df = data # TODO evtl. copy()
     encoded_df = pd.get_dummies(encoded_df, columns = cat_columns, prefix = cat_columns, drop_first = True)
@@ -758,32 +872,10 @@ def encode_and_split(data):
 
     return encoded_df
 
-def do_train_test_split(encoded_df):
-    #seperating train and test set with original ids
-    train_set = encoded_df.iloc[train_id]  
-    #Concat is necessary because iloc somehow does not work. I do not know why, but result is the same though so it's fine.
-    test_set = pd.concat([encoded_df, train_set]).drop_duplicates(keep = False)
 
-
-    X_train = train_set.drop("stroke", axis = 1)
-    y_train = train_set['stroke']
-    X_test  = test_set.drop('stroke', axis=1)
-    y_test  = test_set['stroke']
-
-   
-    #code to show that concat works
-    '''
-    print(train_set.shape)
-    print(test_set.shape)
-    print(len(train_id))
-    print(len(test_id))
-    '''
-
-    return X_train, X_test, y_train, y_test
-
-
-### Scaling the data using Robust Scaler ###
 def scale_data(X_train, X_test):
+    ### Scaling the data using Robust Scaler ###
+
     scaler = RobustScaler() #Using robust because data not normally distributed
     num_cols = ['age', 'avg_glucose_level', 'bmi']
     X_train_scaled, X_test_scaled = X_train, X_test
@@ -792,42 +884,37 @@ def scale_data(X_train, X_test):
 
     return X_train_scaled, X_test_scaled
 
-### Calling split, encode and scaling functions ###
-
-### Load the data ### 
-
 #getting test/train ids
 get_ids()
+
 #Data truncation
 smoking_model()
 new_bmi_model()
 
-#Loading data
+#Loading truncated data
 df_path = "../Data/Truncated_data/Stroke_data.csv"
 data = pd.read_csv(df_path)
 
+#Exploring data
 data_exploration(data)
 
 # One hot encoding
-encoded_df = encode_and_split(data)
-print(encoded_df.head())
+encoded_df = encode(data)
 
 X = encoded_df.drop(['stroke'], axis = 1)
 y = encoded_df['stroke']
 
-#Encoding and spliting
-X_train, X_test, y_train, y_test = do_train_test_split(encoded_df)
+#Encoding and spliting (for KNN)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56, stratify = y)
 
-#Scaling data
+#Scaling data (for KNN)
 X_train_scaled, X_test_scaled = scale_data(X_train, X_test)
 
 
-support_v_m(X_train_scaled, X_test_scaled, y_train, y_test)
-estimate_correlation(data) # Data right? not encoded_df needed?
-
-
+#Calling all models
 KNN(X_train_scaled, X_test_scaled, y_train, y_test)
-
 random_forest(X, y, 5)
+"""
 logistic_regression(X,y,5)
-
+"""
+support_v_m(X, y, 5)
