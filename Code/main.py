@@ -583,7 +583,7 @@ def svm_hyp_search(X_train,y_train):
         
         #for sigmoid kernel
         grid_param_03 = {'C': [0, 0.01, 0.1, 1, 5,10], 
-                      'gamma': [2, 1, 0.1, 0.01],
+                      'gamma': ['scale', 'auto'],
                       'coef0': [-20, -10, -5, 5, 10, 20],
                       'kernel': ['sigmoid'],
                       'class_weight' : ['balanced']}
@@ -639,7 +639,7 @@ def support_v_m(X, y, n_splits):
 
         
         # Initiating classifier with hyperparameters found using randomised grid search (see svm_hyp_search() function)
-        svm_clf = svm.SVC(kernel='sigmoid', C=5, coef0= 0, class_weight = 'balanced', random_state=40)
+        svm_clf = svm.SVC(kernel='sigmoid', C=5, coef0= 0, gamma= 'scale', class_weight = 'balanced', random_state=40)
 
         # Fit the function and save performance metrics
         svm_clf.fit(X_train_rs, y_train)
@@ -914,7 +914,5 @@ X_train_scaled, X_test_scaled = scale_data(X_train, X_test)
 #Calling all models
 KNN(X_train_scaled, X_test_scaled, y_train, y_test)
 random_forest(X, y, 5)
-"""
 logistic_regression(X,y,5)
-"""
 support_v_m(X, y, 5)
