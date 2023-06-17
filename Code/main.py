@@ -342,7 +342,7 @@ def logistic_regression(X,y,n_splits):
     axs.set_ylabel('TPR')
     add_identity(axs, color="r", ls="--",label = 'random\nclassifier')
     axs.legend()
-    axs.title.set_text("LR")
+    axs.title.set_text("ROC curve for LR")
     plt.tight_layout()
     plt.savefig('../output/LR_roc_curve.png')
     plt.show()
