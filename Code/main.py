@@ -835,7 +835,7 @@ def data_exploration(data):
             ax=ax
         )
         ax.set_title(f"Distribution of\n{titles[vars[i]]}", fontsize=12)
-        ax.set_xlabel(xlabels[vars[i]], fontsize=12)
+        ax.set_xlabel(xlabels[vars[i]], fontsize=11)
         if i not in [0, 3]:
             ax.set_ylabel(None)
     fig.tight_layout()
