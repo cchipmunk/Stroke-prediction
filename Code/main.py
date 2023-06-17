@@ -344,8 +344,8 @@ def logistic_regression(X,y,n_splits):
     axs.legend()
     axs.title.set_text("LR")
     plt.tight_layout()
-    plt.show()
     plt.savefig('../output/LR_roc_curve.png')
+    plt.show()
 
     # Summarize the folds
     print(df_performance.groupby(by = 'clf').mean())
@@ -364,8 +364,8 @@ def logistic_regression(X,y,n_splits):
     ax.set_title('Feature importance for LR across 5 folds')
     ax.tick_params(axis='x', rotation=90)
     plt.tight_layout()
-    plt.show()
     plt.savefig('../output/LR_feature_importance.png')
+    plt.show()
 
     # Get the two most important features and the relevant sign:
     df_LR_normcoef.index[:2]
