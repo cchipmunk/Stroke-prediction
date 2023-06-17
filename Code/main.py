@@ -345,7 +345,7 @@ def logistic_regression(X,y,n_splits):
     axs.title.set_text("LR")
     plt.tight_layout()
     plt.show()
-    # plt.savefig('../output/roc_curves.png')
+    plt.savefig('../output/LR_roc_curve.png')
 
     # Summarize the folds
     print(df_performance.groupby(by = 'clf').mean())
@@ -365,7 +365,7 @@ def logistic_regression(X,y,n_splits):
     ax.tick_params(axis='x', rotation=90)
     plt.tight_layout()
     plt.show()
-    # plt.savefig('../output/feature_importance.png')
+    plt.savefig('../output/LR_feature_importance.png')
 
     # Get the two most important features and the relevant sign:
     df_LR_normcoef.index[:2]
@@ -375,7 +375,7 @@ def logistic_regression(X,y,n_splits):
     df_mean_std_performance = df_performance.drop('fold', axis=1).groupby('clf').agg(['mean', 'std'])
     df_mean_std_performance.columns = ['_'.join(col).strip() for col in df_mean_std_performance.columns.values]
     df_mean_std_performance = df_mean_std_performance.reset_index()
-    # df_mean_std_performance.to_csv('../output/LR_mean_std_performance.csv', index=False)
+    df_mean_std_performance.to_csv('../output/LR_mean_std_performance.csv', index=False)
 
 
 def KNN(X_train_scaled,X_test_scaled,y_train,y_test): 
@@ -558,7 +558,7 @@ def random_forest(X, y, n_splits):
 
     # Save the plot 
     plt.tight_layout()
-    # plt.savefig('../output/roc_curves.png')
+    plt.savefig('../output/RF_roc_curve.png')
     plt.show()
 
     # Summarize the performance metrics over all folds
@@ -686,6 +686,7 @@ def support_v_m(X, y, n_splits):
     plt.ylabel("True Positive Rate")
     plt.title("ROC curve for SVM")
     plt.grid(color='black', linestyle='-', linewidth=0.5)
+    plt.savefig("../output/SVM_roc_curve.png")
     plt.show()
 
     #Clearing figure for future graphs
@@ -838,9 +839,10 @@ def data_exploration(data):
         if i not in [0, 3]:
             ax.set_ylabel(None)
     fig.tight_layout()
+    plt.savefig("../output/cont_data.png")
     plt.show()
 
-    ### Demographc data insights ###
+    ### Demographic data insights ###
     dem_data = data.copy()
     dem_data["stroke"] = pd.Categorical(dem_data["stroke"])
     dem_data["stroke"] = dem_data["stroke"].cat.rename_categories(
@@ -857,6 +859,7 @@ def data_exploration(data):
     # Plot age dispersion separated by gender
     age_range = sns.boxplot(dem_data, y = "age", x = "gender", hue = "stroke", ax = ax[1], width = 0.4)
     age_range = age_range.set(ylabel = "Age [year]", xlabel='Gender', title= 'Age Range split by Gender and Stroke Outcome')
+    plt.savefig("../output/demo_insights.png")
     plt.show()
 
 
