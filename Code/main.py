@@ -366,10 +366,6 @@ def logistic_regression(X,y,n_splits):
     plt.tight_layout()
     plt.savefig('../output/LR_feature_importance.png')
     plt.show()
-
-    # Get the two most important features and the relevant sign:
-    df_LR_normcoef.index[:2]
-    df_LR_normcoef['importance_mean'][:2]
     
     # Summarize the performance metrics over all folds (with std)
     df_mean_std_performance = df_performance.drop('fold', axis=1).groupby('clf').agg(['mean', 'std'])
