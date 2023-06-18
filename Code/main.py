@@ -342,7 +342,7 @@ def logistic_regression(X,y,n_splits):
     axs.set_ylabel('TPR', fontsize = 11)
     add_identity(axs, color="r", ls="--",label = 'random\nclassifier')
     axs.legend()
-    axs.title.set_text("ROC curve for LR", fontsize = 12)
+    axs.set_title("ROC curve for LR", fontsize = 12)
     plt.tight_layout()
     plt.savefig('../output/LR_roc_curve.png')
     plt.show()
@@ -358,7 +358,7 @@ def logistic_regression(X,y,n_splits):
     # Visualize the normalized feature importance across the n folds and add error bar to indicate the std
     top_features_15 = df_LR_normcoef_sorted[:15]
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.bar(top_features_15.index.tolist(), top_features_15['mean_coef'].values, yerr=top_features_15.std(axis=1).tolist(), capsize=4, fontsize = 10)
+    ax.bar(top_features_15.index.tolist(), top_features_15['mean_coef'].values, yerr=top_features_15.std(axis=1).tolist(), capsize=4)
     ax.set_xlabel('Features', fontsize = 11)
     ax.set_ylabel('Coefficient Value (normalized)', fontsize = 11)
     ax.set_title('Feature importance for LR across 5 folds', fontsize = 12)
@@ -664,7 +664,7 @@ def support_v_m(X, y, n_splits):
 
 
     # Printing mean values from the cross validation
-    print(f'Preicsion across folds: {precision}, mean = {mean(precision)}')
+    print(f'Precision across folds: {precision}, mean = {mean(precision)}')
     print(f'Recall across folds, {recall}, mean = {mean(recall)}')
     print(f'F1 across folds: {F1}, mean = {mean(F1)}')
     print()
