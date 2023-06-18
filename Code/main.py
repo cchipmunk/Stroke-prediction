@@ -338,11 +338,11 @@ def logistic_regression(X,y,n_splits):
         # increase counter for folds
         fold += 1
 
-    axs.set_xlabel('FPR')
-    axs.set_ylabel('TPR')
+    axs.set_xlabel('FPR', fontsize = 11)
+    axs.set_ylabel('TPR', fontsize = 11)
     add_identity(axs, color="r", ls="--",label = 'random\nclassifier')
     axs.legend()
-    axs.title.set_text("ROC curve for LR")
+    axs.title.set_text("ROC curve for LR", fontsize = 12)
     plt.tight_layout()
     plt.savefig('../output/LR_roc_curve.png')
     plt.show()
@@ -358,10 +358,10 @@ def logistic_regression(X,y,n_splits):
     # Visualize the normalized feature importance across the n folds and add error bar to indicate the std
     top_features_15 = df_LR_normcoef_sorted[:15]
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.bar(top_features_15.index.tolist(), top_features_15['mean_coef'].values, yerr=top_features_15.std(axis=1).tolist(), capsize=4)
-    ax.set_xlabel('Features')
-    ax.set_ylabel('Coefficient Value (normalized)')
-    ax.set_title('Feature importance for LR across 5 folds')
+    ax.bar(top_features_15.index.tolist(), top_features_15['mean_coef'].values, yerr=top_features_15.std(axis=1).tolist(), capsize=4, fontsize = 10)
+    ax.set_xlabel('Features', fontsize = 11)
+    ax.set_ylabel('Coefficient Value (normalized)', fontsize = 11)
+    ax.set_title('Feature importance for LR across 5 folds', fontsize = 12)
     ax.tick_params(axis='x', rotation=90)
     plt.tight_layout()
     plt.savefig('../output/LR_feature_importance.png')
@@ -546,11 +546,11 @@ def random_forest(X, y, n_splits):
 
     # Edit plot
     model_name = "Random Forest"
-    axs.set_xlabel("FPR")
-    axs.set_ylabel("TPR")
+    axs.set_xlabel("FPR", fontsize = 11)
+    axs.set_ylabel("TPR", fontsize = 11)
     add_identity(axs, color="r", ls="--",label = 'random\nclassifier')
     plt.legend()
-    axs.set_title(f"ROC curve of {model_name}", fontsize=9)
+    axs.set_title(f"ROC curve of {model_name}", fontsize=12)
 
     # Save the plot 
     plt.tight_layout()
@@ -838,6 +838,7 @@ def data_exploration(data):
     plt.savefig("../output/cont_data.png")
     plt.show()
 
+
     ### Demographic data insights ###
     dem_data = data.copy()
     dem_data["stroke"] = pd.Categorical(dem_data["stroke"])
@@ -850,11 +851,15 @@ def data_exploration(data):
 
     # Plot the age distribution separated by outcome
     age = sns.histplot(dem_data, x = "age", binwidth = 5, hue = "stroke", ax = ax[0])
-    age.set(xlabel = "Age [year]", ylabel = "Number of Patients", title = "Age Distribution by Stroke Outcome")
+    age.set_xlabel(xlabel = "Age [year]", fontsize = 11) 
+    age.set_ylabel(ylabel = "Number of Patients", fontsize = 11) 
+    age.set_title(label = "Age Distribution by Stroke Outcome", fontsize = 12, loc = "center")
 
     # Plot age dispersion separated by gender
     age_range = sns.boxplot(dem_data, y = "age", x = "gender", hue = "stroke", ax = ax[1], width = 0.4)
-    age_range = age_range.set(ylabel = "Age [year]", xlabel='Gender', title= 'Age Range split by Gender and Stroke Outcome')
+    age_range.set_ylabel(ylabel = "Age [year]", fontsize = 11) 
+    age_range.set_xlabel(xlabel='Gender', fontsize = 11) 
+    age_range.set_title(label = 'Age Range split by Gender and Stroke Outcome', fontsize = 12, loc = "center")
     plt.savefig("../output/demo_insights.png")
     plt.show()
 
