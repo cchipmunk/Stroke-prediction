@@ -820,7 +820,7 @@ def data_exploration(data):
 
     xlabels = {
         "age": "Age (years)",
-        "avg_glucose_level": "Average glucose level (mg/dl)",
+        "avg_glucose_level": "Average Glucose Level (mg/dl)",
         "bmi": "Body Mass Index (kg/m**2)",
     }
     for i, ax in enumerate(axs.flatten()):
