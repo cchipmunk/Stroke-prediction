@@ -75,19 +75,6 @@ def bmi_scores(model, X_train, y_train, X_test, y_test, y_mean):
     print('Score using means (no model): R2 score: {:.3f}, RMSE: {:.3f}'.format(r2_mean, rmse_mean))
 
 
-def Kolmogorov_Smirnov(df):
-    ### Kolgorov_Smirnov test for normality on all continuous variable (with and without transformations) ###
-    for i in ['age', 'avg_glucose_level', 'bmi']:
-        print(f"{i} - Kolgorov Smirnov test for normality:")
-        res = stats.kstest(df[i], stats.norm.cdf)
-        print(f"probability that {i} is normaly distributed with no transformation = {1 - res.statistic}")
-        res = stats.kstest((df[i])**0.5, stats.norm.cdf)
-        print(f"probability that {i} is normaly distributed with sqrt transformation = {1 - res.statistic}")
-        res = stats.kstest(np.log10(df[i]), stats.norm.cdf)
-        print(f"probability that {i} is normaly distributed with log transformation = {1 - res.statistic}")
-        print()
-
-
 def KNN(X_train_scaled,X_test_scaled,y_train,y_test): 
    
     # K tuning
