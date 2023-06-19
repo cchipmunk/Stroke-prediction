@@ -396,6 +396,12 @@ def KNN(X_train_scaled,X_test_scaled,y_train,y_test):
     
     accuracy = accuracy_score(y_test, y_pred)
     print("Accuracy Score of KNN:", accuracy)
+
+    precision = precision_score(y_test, y_pred)
+    print("Precision of KNN: ", precision)
+
+    recall = recall_score(y_test, y_pred)
+    print("Recall of KNN:", recall)
     
     f1 = f1_score(y_test, y_pred)
     print("F1 Score of KNN:", f1)
