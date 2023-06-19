@@ -224,7 +224,7 @@ def new_bmi_model():
     y = learning_Set['bmi']
 
     # Splitting our data a second time for no reason (we lose a bit of accuracy, but at this point there's not enough time to change it)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56) # TODO do we need stratify as well?
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=56) 
 
     #Scaling the data with a robust scaler (because our data is not normally distributed)
     scaler = RobustScaler() 
@@ -273,7 +273,7 @@ def new_bmi_model():
 
 
 
-def Kolmogorov_Smirnov(df):
+def Kolmogorov_Smirnov(df): #TODO
     # Kolgorov_Smirnov test for normality with transformations
     for i in ['age', 'avg_glucose_level', 'bmi']:
         print(f"{i} - Kolgorov Smirnov test for normality:")
@@ -481,7 +481,6 @@ def random_forest(X, y, n_splits):
     # Prepare the performance overview data frame
     df_performance = pd.DataFrame(columns = ['fold','clf','accuracy','precision','recall',
                                             'specificity','F1','roc_auc'])
-    df_LR_normcoef = pd.DataFrame(index = X.columns, columns = np.arange(n_splits)) # evtl. löschen
 
     # Plot to save performance metrics
     fold = 0
@@ -695,48 +694,6 @@ def support_v_m(X, y, n_splits):
     plt.clf
 
 
-
-# show correlation --> needed?
-def correlation_plot():
-    corr_plot= sns.pairplot(data=data, x_vars=vars, y_vars=vars)
-    corr_plot.fig.suptitle("Correlation between continuous variables", y = 1)
-    plt.show()
-
-def estimate_correlation(data):
-    ### Simple function to estimate correlation between Features and label ###
-    num_cols = ['age', 'avg_glucose_level', 'bmi']
-
-    for i in num_cols:
-        print(i)
-        pear_v = sts.pearsonr(data['stroke'], data[i])
-        print(f"""Pearson coefficient for {i} :
-            value = {pear_v[0]}
-            p = {pear_v[1]}""")
-        if pear_v[1] <= 0.05/10: # With Bonferoni correcture
-            print("            *** Heavily Correlated")
-        elif pear_v[1] >= 0.05/10 and p <= 0.05:
-            print("          * correlated")
-        else:
-            print("            No significant correlation")
-            print()
-        
-    for i in ["gender", "hypertension", "heart_disease", "ever_married", "work_type", "Residence_type", "smoking_status"]:
-        cont_table = pd.crosstab(data[i], data['stroke'])
-        p = sts.chi2_contingency(cont_table)[1]
-        s = sts.chi2_contingency(cont_table)[0]
-
-        print(f"""Chi_sq for {i} :
-            Value = {s}
-            p = {p}""")
-        if p <= 0.05/10: # With Bonferoni correcture
-            print("            *** Heavily Correlated")
-        elif p >= 0.05/10 and p <= 0.05:
-            print("          * correlated")
-        else:
-            print("            No significant correlation")
-        print()
-
-
 def data_exploration(data):
     ### Data Exploration ###
 
@@ -875,7 +832,7 @@ def encode(data):
     ### Test/train splits and data encoding ###
 
     cat_columns = ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']
-    encoded_df = data # TODO evtl. copy()
+    encoded_df = data.copy() 
     encoded_df = pd.get_dummies(encoded_df, columns = cat_columns, prefix = cat_columns, drop_first = True)
 
     encoded_df.drop(['Unnamed: 0.1', 'Unnamed: 0', 'id'], axis=1, inplace = True)
